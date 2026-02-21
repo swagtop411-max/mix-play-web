@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mix Play</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
+  color: white;
+  text-align: center;
+}
+
+header {
+  padding: 20px;
+  font-size: 28px;
+  font-weight: bold;
+  background: #111;
+  box-shadow: 0 0 20px #00ff88;
+}
+
+.container {
+  padding: 20px;
+}
+
+.card {
+  background: #1f1f1f;
+  margin: 15px auto;
+  padding: 15px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 0 15px #00ff88;
+}
+
+button {
+  background: #00ff88;
+  border: none;
+  padding: 12px 20px;
+  margin: 10px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #00cc6a;
+}
+
+.history {
+  margin-top: 20px;
+  font-size: 14px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+</style>
+</head>
+
+<body>
+
+<header>🏆 MIX PLAY</header>
+
+<div class="container">
+
+<div class="card">
+<h3>Times</h3>
+<p id="team1"></p>
+<p id="team2"></p>
+<p id="bench"></p>
+</div>
+
+<div class="card">
+<h3>Placar</h3>
+<p id="score"></p>
+<button onclick="winner(1)">Time 1 venceu</button>
+<button onclick="winner(2)">Time 2 venceu</button>
+</div>
+
+<div class="card history">
+<h3>Histórico</h3>
+<div id="history"></div>
+</div>
+
+</div>
+
+<script>
+let teams = ["Time A", "Time B", "Time C", "Time D"];
+let current = [teams[0], teams[1]];
+let bench = [teams[2], teams[3]];
+let winStreak = 0;
+let lastWinner = null;
+
+function render() {
+  document.getElementById("team1").innerText = "Quadra: " + current[0];
+  document.getElementById("team2").innerText = "vs " + current[1];
+  document.getElementById("bench").innerText = "Esperando: " + bench.join(" e ");
+  document.getElementById("score").innerText = 
+    current[0] + " vs " + current[1];
+}
+
+function rotate() {
+  let loser = lastWinner === 1 ? current[1] : current[0];
+
+  bench.push(loser);
+
+  if (winStreak >= 2) {
+    bench.push(current[lastWinner-1]);
+    current = [bench.shift(), bench.shift()];
+    winStreak = 0;
+  } else {
+    current = [current[lastWinner-1], bench.shift()];
+  }
+}
+
+function winner(team) {
+  if (lastWinner === team) {
+    winStreak++;
+  } else {
+    winStreak = 1;
+  }
+
+  lastWinner = team;
+
+  document.getElementById("history").innerHTML +=
+    "<p>" + current[team-1] + " venceu</p>";
+
+  rotate();
+  render();
+}
+
+render();
+</script>
+
+</body>
+</html>
