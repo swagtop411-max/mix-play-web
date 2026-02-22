@@ -1,97 +1,10 @@
-<script>
 
-var teams = [];
-var wins = {};
-var currentMatch = [];
-var matchNumber = 0;
-
-function addTeam(){
-var input = document.getElementById("teamInput");
-if(!input) return;
-
-var name = input.value.trim();
-
-if(name === ""){
-alert("Digite um nome");
-return;
-}
-
-if(teams.indexOf(name) !== -1){
-alert("Time já existe");
-return;
-}
-
-teams.push(name);
-wins[name] = 0;
-input.value = "";
-renderTeams();
-}
-
-function renderTeams(){
-var list = document.getElementById("teamList");
-if(!list) return;
-
-list.innerHTML = "";
-
-for(var i=0; i<teams.length; i++){
-list.innerHTML += "<div class='team'>" + teams[i] + "</div>";
-}
-}
-
-function start(){
-if(teams.length < 2){
-alert("Adicione pelo menos 2 duplas");
-return;
-}
-
-document.getElementById("setup").style.display = "none";
-document.getElementById("game").style.display = "block";
-
-nextMatch();
-}
-
-function nextMatch(){
-if(teams.length < 2) return;
-
-var i1 = Math.floor(Math.random()*teams.length);
-var i2 = Math.floor(Math.random()*teams.length);
-
-while(i1 === i2){
-i2 = Math.floor(Math.random()*teams.length);
-}
-
-currentMatch = [teams[i1], teams[i2]];
-
-document.getElementById("t1").innerText = currentMatch[0];
-document.getElementById("t2").innerText = currentMatch[1];
-
-matchNumber++;
-document.getElementById("matchCount").innerText = "Partida #" + matchNumber;
-
-renderRanking();
-}
-
-function win(index){
-var winner = currentMatch[index];
-wins[winner]++;
-nextMatch();
-}
-
-function renderRanking(){
-var ranking = document.getElementById("ranking");
-ranking.innerHTML = "<h3>Ranking</h3>";
-
-var sorted = Object.keys(wins).sort(function(a,b){
-return wins[b] - wins[a];
-});
-
-for(var i=0; i<sorted.length; i++){
-ranking.innerHTML += "<div>" + sorted[i] + " - " + wins[sorted[i]] + " vitórias</div>";
-}
-}
-
-function reset(){
-location.reload();
-}
-
-</script>
+<!DOCTYPE html>
+<html>
+<head>
+<title>Teste</title>
+</head>
+<body style="background:black;color:white;text-align:center;margin-top:100px;">
+<h1>FUNCIONOU</h1>
+</body>
+</html>
