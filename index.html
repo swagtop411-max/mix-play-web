@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -78,6 +79,15 @@ Criado por <span>Murilo Pompeo</span>
 // BLOQUEIO INICIAL
 let desbloqueado = false;
 
+// Detecta parâmetro pago do Stripe Payment Link
+if(new URLSearchParams(window.location.search).get("paid") === "true"){
+  desbloqueado = true;
+  document.getElementById("pagamento").style.display="none";
+  document.getElementById("cadastro").style.display="block";
+  document.getElementById("musica").play();
+  alert("Pagamento confirmado! Agora você pode cadastrar times e gerar partidas.");
+}
+
 // Dados
 let times=[];
 let vitorias={};
@@ -86,22 +96,11 @@ let atual=[];
 let tempo=900;
 let intervalo;
 
-// Link de pagamento do Stripe (Payment Link)
-const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/test_XXXXXXXX"; // Substitua pelo seu link real
-
-// BOTÃO DE PAGAMENTO
-document.getElementById("payButton").addEventListener("click", () => {
-  // Redireciona para pagamento
-  window.open(STRIPE_PAYMENT_LINK, "_blank");
-  alert("Após o pagamento, clique em 'Já paguei' para desbloquear o app.");
-  let confirma = confirm("Clique OK se você já realizou o pagamento");
-  if(confirma){
-    desbloqueado = true;
-    document.getElementById("pagamento").style.display="none";
-    document.getElementById("cadastro").style.display="block";
-    document.getElementById("musica").play();
-    alert("Pagamento confirmado! Agora você pode cadastrar times e gerar partidas.");
-  }
+// BOTÃO DE PAGAMENTO (abre Stripe Payment Link)
+const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/test_XXXXXXXX"; // substitua pelo seu link real
+document.getElementById("payButton").addEventListener("click",()=>{
+  window.open(STRIPE_PAYMENT_LINK,"_blank");
+  alert("Após o pagamento, retorne ao site e aguarde a liberação automática via ?paid=true");
 });
 
 // FUNÇÕES DE CADASTRO E PARTIDAS
@@ -215,7 +214,6 @@ setTimeout(()=>{c.remove();},2000);
 // Inicializa
 mostrarTimes();
 atualizarRanking();
-document.getElementById("musica").play();
 </script>
 
 </body>
