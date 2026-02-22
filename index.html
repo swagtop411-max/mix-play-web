@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mix Play</title>
+
+<style>
+body{
+font-family:Arial, sans-serif;
+background:#111;
+color:#fff;
+text-align:center;
+margin:0;
+padding:20px;
+}
+
+input,button{
+padding:10px;
+margin:5px;
+border:none;
+border-radius:6px;
+}
+
+button{
+background:#00c853;
+color:white;
+cursor:pointer;
+}
+
+button:hover{
+background:#00e676;
+}
+
+.team{
+background:#222;
+margin:5px;
+padding:5px;
+border-radius:4px;
+}
+
+.card{
+background:#1e1e1e;
+padding:20px;
+border-radius:10px;
+margin-top:20px;
+}
+</style>
+</head>
+<body>
+
+<h1>🏐 Mix Play</h1>
+
+<div id="setup" class="card">
+<h2>Adicionar Duplas</h2>
+<input id="teamInput" placeholder="Nome da dupla">
+<button onclick="addTeam()">Adicionar</button>
+<div id="teamList"></div>
+<button onclick="start()">Iniciar Jogo</button>
+</div>
+
+<div id="game" class="card" style="display:none;">
+<h2>Partida Atual</h2>
+<h3 id="t1"></h3>
+<h3>VS</h3>
+<h3 id="t2"></h3>
+
+<div id="streakEl"></div>
+
+<button onclick="win(0)">Vitória Time 1</button>
+<button onclick="win(1)">Vitória Time 2</button>
+
+<p id="matchCount"></p>
+
+<div id="ranking"></div>
+<br>
+<div id="history"></div>
+
+<br>
+<button onclick="reset()">Resetar</button>
+</div>
+
+<script>
+/* COLE AQUI SEU SCRIPT EXATAMENTE COMO VOCÊ ENVIOU */
+</script>
+
+</body>
+</html>
