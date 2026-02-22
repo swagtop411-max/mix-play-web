@@ -1,10 +1,187 @@
 
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-<title>Teste</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mix Play</title>
+
+<style>
+body{
+font-family:Arial, sans-serif;
+background:#111;
+color:#fff;
+text-align:center;
+margin:0;
+padding:20px;
+}
+
+input,button{
+padding:10px;
+margin:5px;
+border:none;
+border-radius:6px;
+}
+
+button{
+background:#00c853;
+color:white;
+cursor:pointer;
+}
+
+button:hover{
+background:#00e676;
+}
+
+.team{
+background:#222;
+margin:5px;
+padding:8px;
+border-radius:6px;
+}
+
+.card{
+background:#1e1e1e;
+padding:20px;
+border-radius:10px;
+margin-top:20px;
+}
+
+h1{
+color:#00e676;
+}
+</style>
 </head>
-<body style="background:black;color:white;text-align:center;margin-top:100px;">
-<h1>FUNCIONOU</h1>
+
+<body>
+
+<h1>🏐 Mix Play</h1>
+
+<div id="setup" class="card">
+<h2>Adicionar Duplas</h2>
+
+<input id="teamInput" placeholder="Nome da dupla">
+<button onclick="addTeam()">Adicionar</button>
+
+<div id="teamList"></div>
+
+<br>
+<button onclick="start()">Iniciar Jogo</button>
+</div>
+
+<div id="game" class="card" style="display:none;">
+<h2>Partida Atual</h2>
+
+<h3 id="t1"></h3>
+<h3>VS</h3>
+<h3 id="t2"></h3>
+
+<br>
+
+<button onclick="win(0)">Vitória Time 1</button>
+<button onclick="win(1)">Vitória Time 2</button>
+
+<p id="matchCount"></p>
+
+<div id="ranking"></div>
+
+<br>
+<button onclick="resetGame()">Resetar</button>
+</div>
+
+<script>
+
+var teams = [];
+var wins = {};
+var currentMatch = [];
+var matchNumber = 0;
+
+function addTeam(){
+var input = document.getElementById("teamInput");
+var name = input.value.trim();
+
+if(name === ""){
+alert("Digite um nome");
+return;
+}
+
+if(teams.indexOf(name) !== -1){
+alert("Time já existe");
+return;
+}
+
+teams.push(name);
+wins[name] = 0;
+input.value = "";
+renderTeams();
+}
+
+function renderTeams(){
+var list = document.getElementById("teamList");
+list.innerHTML = "";
+
+for(var i=0; i<teams.length; i++){
+list.innerHTML += "<div class='team'>" + teams[i] + "</div>";
+}
+}
+
+function start(){
+if(teams.length < 2){
+alert("Adicione pelo menos 2 duplas");
+return;
+}
+
+document.getElementById("setup").style.display = "none";
+document.getElementById("game").style.display = "block";
+
+nextMatch();
+}
+
+function nextMatch(){
+if(teams.length < 2) return;
+
+var i1 = Math.floor(Math.random()*teams.length);
+var i2 = Math.floor(Math.random()*teams.length);
+
+while(i1 === i2){
+i2 = Math.floor(Math.random()*teams.length);
+}
+
+currentMatch = [teams[i1], teams[i2]];
+
+document.getElementById("t1").innerText = currentMatch[0];
+document.getElementById("t2").innerText = currentMatch[1];
+
+matchNumber++;
+document.getElementById("matchCount").innerText = "Partida #" + matchNumber;
+
+renderRanking();
+}
+
+function win(index){
+var winner = currentMatch[index];
+wins[winner]++;
+nextMatch();
+}
+
+function renderRanking(){
+var ranking = document.getElementById("ranking");
+ranking.innerHTML = "<h3>Ranking</h3>";
+
+var sorted = Object.keys(wins).sort(function(a,b){
+return wins[b] - wins[a];
+});
+
+for(var i=0; i<sorted.length; i++){
+ranking.innerHTML += "<div>" + sorted[i] + " - " + wins[sorted[i]] + " vitórias</div>";
+}
+}
+
+function resetGame(){
+location.reload();
+}
+
+</script>
+
 </body>
 </html>
