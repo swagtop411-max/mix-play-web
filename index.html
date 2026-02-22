@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mix Play - Cadastro</title>
+<title>Mix Play - Vôlei de Areia</title>
 
 <style>
 body{
@@ -12,22 +12,23 @@ font-family:Arial, sans-serif;
 background:url("file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
 background-size:cover;
 color:white;
-text-align:center;
 }
 
 .overlay{
-background:rgba(0,0,0,0.6);
+background:rgba(0,0,0,0.65);
 min-height:100vh;
 padding:20px;
+text-align:center;
 }
 
 .container{
-background:rgba(255,255,255,0.9);
+background:rgba(255,255,255,0.95);
 color:black;
 padding:20px;
 border-radius:15px;
-max-width:400px;
+max-width:500px;
 margin:auto;
+margin-top:20px;
 }
 
 input,button{
@@ -43,51 +44,186 @@ color:white;
 font-weight:bold;
 cursor:pointer;
 }
+
+button:hover{
+background:#e68900;
+}
+
+.hidden{
+display:none;
+}
+
+#timer{
+font-size:35px;
+color:red;
+font-weight:bold;
+}
+
+.vencedor{
+animation:explodir 0.6s ease;
+}
+
+@keyframes explodir{
+0%{transform:scale(1);}
+50%{transform:scale(1.3);}
+100%{transform:scale(1);}
+}
 </style>
 </head>
 
 <body>
+
 <div class="overlay">
+
 <h1>🏐 Mix Play</h1>
 
-<div class="container">
+<!-- TELA CADASTRO -->
+<div id="telaCadastro" class="container">
 <h3>Cadastrar Time</h3>
 <input type="text" id="nomeTime" placeholder="Nome do Time">
 <button onclick="adicionarTime()">Adicionar</button>
 
 <ul id="listaTimes"></ul>
 
-<button onclick="irParaPartidas()">Ir para Partidas</button>
+<button onclick="mostrarPartidas()">Ir para Partidas</button>
 </div>
+
+<!-- TELA PARTIDAS -->
+<div id="telaPartidas" class="container hidden">
+
+<button onclick="sortear()">Sortear Confronto</button>
+<h3 id="confronto"></h3>
+
+<div id="timer">15:00</div>
+<button onclick="iniciar()">Iniciar</button>
+
+<div id="botoesVitoria"></div>
+
+<h3>Ranking</h3>
+<ul id="ranking"></ul>
+
+<button onclick="voltar()">Voltar</button>
 </div>
+
+</div>
+
+<audio id="torcida" src="https://www.soundjay.com/human/crowd-cheer-01.wav"></audio>
+<audio id="apito" src="https://www.soundjay.com/button/beep-07.wav"></audio>
 
 <script>
 let times = JSON.parse(localStorage.getItem("times")) || [];
+let minutos=15;
+let segundos=0;
+let intervalo;
 
 function adicionarTime(){
-let nome = document.getElementById("nomeTime").value;
+let nome=document.getElementById("nomeTime").value;
 if(nome==="") return;
 
-times.push({nome:nome, pontos:0});
-localStorage.setItem("times", JSON.stringify(times));
-
+times.push({nome:nome,pontos:0});
+localStorage.setItem("times",JSON.stringify(times));
 document.getElementById("nomeTime").value="";
 atualizarLista();
 }
 
 function atualizarLista(){
-let lista = document.getElementById("listaTimes");
+let lista=document.getElementById("listaTimes");
 lista.innerHTML="";
 times.forEach(t=>{
-lista.innerHTML+="<li>"+t.nome+"</li>";
+lista.innerHTML+=`<li>${t.nome}</li>`;
 });
 }
 
-function irParaPartidas(){
-window.location.href="partidas.html";
+function mostrarPartidas(){
+document.getElementById("telaCadastro").classList.add("hidden");
+document.getElementById("telaPartidas").classList.remove("hidden");
+atualizarRanking();
+}
+
+function voltar(){
+document.getElementById("telaPartidas").classList.add("hidden");
+document.getElementById("telaCadastro").classList.remove("hidden");
+}
+
+function sortear(){
+if(times.length<2){
+alert("Cadastre pelo menos 2 times");
+return;
+}
+
+let t1=times[Math.floor(Math.random()*times.length)];
+let t2;
+do{
+t2=times[Math.floor(Math.random()*times.length)];
+}while(t1===t2);
+
+document.getElementById("confronto").innerText=`${t1.nome} VS ${t2.nome}`;
+
+document.getElementById("botoesVitoria").innerHTML=`
+<button onclick="registrarVitoria('${t1.nome}')">${t1.nome} venceu</button>
+<button onclick="registrarVitoria('${t2.nome}')">${t2.nome} venceu</button>
+`;
+
+resetarTempo();
+}
+
+function registrarVitoria(nome){
+let time=times.find(t=>t.nome===nome);
+time.pontos+=3;
+localStorage.setItem("times",JSON.stringify(times));
+
+document.getElementById("torcida").play();
+document.getElementById("confronto").classList.add("vencedor");
+
+setTimeout(()=>{
+document.getElementById("confronto").classList.remove("vencedor");
+},600);
+
+atualizarRanking();
+}
+
+function atualizarRanking(){
+let lista=document.getElementById("ranking");
+lista.innerHTML="";
+times.sort((a,b)=>b.pontos-a.pontos);
+times.forEach(t=>{
+lista.innerHTML+=`<li>${t.nome} - ${t.pontos} pts</li>`;
+});
+}
+
+function resetarTempo(){
+minutos=15;
+segundos=0;
+atualizarTimer();
+}
+
+function iniciar(){
+clearInterval(intervalo);
+intervalo=setInterval(()=>{
+if(segundos===0){
+if(minutos===0){
+clearInterval(intervalo);
+document.getElementById("apito").play();
+alert("Tempo Encerrado!");
+return;
+}
+minutos--;
+segundos=59;
+}else{
+segundos--;
+}
+atualizarTimer();
+},1000);
+}
+
+function atualizarTimer(){
+let m=minutos<10?"0"+minutos:minutos;
+let s=segundos<10?"0"+segundos:segundos;
+document.getElementById("timer").innerText=m+":"+s;
 }
 
 atualizarLista();
 </script>
+
 </body>
 </html>
