@@ -141,12 +141,13 @@ let atual=[];
 let tempo=900;
 let intervalo;
 let streakVencedor=0; // partidas consecutivas do vencedor
+let vencedorAtual="";
 
 // ===== LOCAL STORAGE =====
 const STORAGE_KEY="mixplay_times";
 
 function salvar(){
-  localStorage.setItem(STORAGE_KEY,JSON.stringify({times,vitorias,confrontos,atual,streakVencedor}));
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({times,vitorias,confrontos,atual,streakVencedor,vencedorAtual}));
 }
 
 function carregar(){
@@ -158,6 +159,7 @@ function carregar(){
     confrontos=obj.confrontos || [];
     atual=obj.atual || [];
     streakVencedor=obj.streakVencedor || 0;
+    vencedorAtual=obj.vencedorAtual || "";
   }
 }
 
@@ -211,34 +213,46 @@ function voltar(){
   clearInterval(intervalo);
   resetTimer();
   streakVencedor=0;
+  vencedorAtual="";
   salvar();
 }
 
 // ===== GERAR PARTIDA =====
 function gerarPartida(){
+  if(times.length<2) return;
+  
+  // Reinicia confrontos se todos já jogaram
   if(confrontos.length >= (times.length*(times.length-1))/2){
     confrontos=[];
   }
 
-  let t1,t2,comb;
-  if(streakVencedor>0){
-    t1=atual[0]; // mantém vencedor
-    do{ t2=Math.floor(Math.random()*times.length); }while(times[t2]==t1);
-    t2=times[t2];
+  let t1, t2;
+  
+  if(streakVencedor>0 && vencedorAtual){ // mantém vencedor apenas 2 partidas
+    t1=vencedorAtual;
+    do{ 
+      t2=Math.floor(Math.random()*times.length);
+      t2=times[t2];
+    }while(t2==t1);
   } else {
+    // sorteia dois times diferentes
     do{
       t1=Math.floor(Math.random()*times.length);
       t2=Math.floor(Math.random()*times.length);
     }while(t1==t2);
     t1=times[t1];
     t2=times[t2];
+    streakVencedor=0;
+    vencedorAtual="";
   }
 
-  comb=[t1,t2].sort().join("-");
+  let comb=[t1,t2].sort().join("-");
   if(confrontos.includes(comb)){
+    // Garante que não repita o confronto, tenta novamente
     gerarPartida();
     return;
   }
+
   confrontos.push(comb);
   atual=[t1,t2];
   document.getElementById("jogo").innerHTML=`${t1} VS ${t2}`;
@@ -250,14 +264,26 @@ function gerarPartida(){
 function vencedor(num){
   clearInterval(intervalo);
   let nome = atual[num-1];
-  if(!nome) return; // previne undefined
+  if(!nome) return;
+  
   vitorias[nome]++;
   document.getElementById("torcida").play();
   document.getElementById("jogo").innerHTML=`🏆 <span class="vencedor">${nome} venceu!</span>`;
   atualizarRanking();
 
-  streakVencedor = (streakVencedor>0 && nome==atual[0]) ? streakVencedor+1 : 1;
-  if(streakVencedor>2) streakVencedor=0;
+  // Atualiza streak
+  if(vencedorAtual==nome){
+    streakVencedor++;
+  } else {
+    vencedorAtual=nome;
+    streakVencedor=1;
+  }
+
+  // Limite de 2 partidas consecutivas
+  if(streakVencedor>2){
+    streakVencedor=0;
+    vencedorAtual="";
+  }
 
   setTimeout(()=>{gerarPartida();},3000);
   salvar();
