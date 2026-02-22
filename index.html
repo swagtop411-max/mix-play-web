@@ -89,6 +89,10 @@ color:#ff9800;
 font-weight:bold;
 text-shadow:0 0 10px orange;
 }
+
+#ranking div{
+margin:5px 0;
+}
 </style>
 </head>
 
@@ -98,6 +102,7 @@ text-shadow:0 0 10px orange;
 
 <h1>🏐 Mix Play Web</h1>
 
+<!-- TELA DE CADASTRO -->
 <div id="cadastro">
 <input type="text" id="nomeTime" placeholder="Nome do Time">
 <button onclick="addTime()">Adicionar</button>
@@ -105,12 +110,16 @@ text-shadow:0 0 10px orange;
 <button onclick="iniciar()">Iniciar Partidas</button>
 </div>
 
+<!-- TELA DE PARTIDAS -->
 <div id="partidas" style="display:none;">
 <div class="partida" id="jogo"></div>
 <div class="timer" id="timer">15:00</div>
 <button onclick="vencedor(1)">Time 1 venceu</button>
 <button onclick="vencedor(2)">Time 2 venceu</button>
 <button onclick="voltar()">Voltar</button>
+
+<h3 style="margin-top:20px;">🏆 Ranking de Vitórias</h3>
+<div id="ranking"></div>
 </div>
 
 </div>
@@ -124,21 +133,27 @@ Criado por <span>Murilo Pompeo</span>
 <audio id="musica" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
 
 <script>
+// Dados do sistema
 let times=[];
+let vitorias={};
 let confrontos=[];
 let atual=[];
 let tempo=900;
 let intervalo;
 
+// ADICIONAR TIME
 function addTime(){
 let nome=document.getElementById("nomeTime").value;
 if(nome.trim()!=""){
 times.push(nome);
+vitorias[nome]=0;
 document.getElementById("nomeTime").value="";
 mostrarTimes();
+atualizarRanking();
 }
 }
 
+// MOSTRAR TIMES CADASTRADOS
 function mostrarTimes(){
 let lista=document.getElementById("lista");
 lista.innerHTML="";
@@ -147,21 +162,37 @@ lista.innerHTML+=`<div>${t} <button onclick="remover(${i})">X</button></div>`;
 });
 }
 
+// REMOVER TIME
 function remover(i){
+let nomeRemovido = times[i];
+if(!confirm("Deseja excluir o time " + nomeRemovido + "?")) return;
 times.splice(i,1);
+delete vitorias[nomeRemovido];
 mostrarTimes();
+atualizarRanking();
 }
 
+// INICIAR PARTIDAS
 function iniciar(){
-if(times.length<2)return alert("Cadastre pelo menos 2 times");
+if(times.length<2){alert("Cadastre pelo menos 2 times"); return;}
 document.getElementById("cadastro").style.display="none";
 document.getElementById("partidas").style.display="block";
 document.getElementById("musica").play();
 gerarPartida();
+atualizarRanking();
 }
 
+// VOLTAR PARA CADASTRO
+function voltar(){
+document.getElementById("cadastro").style.display="block";
+document.getElementById("partidas").style.display="none";
+clearInterval(intervalo);
+resetTimer();
+}
+
+// GERAR PARTIDA AUTOMÁTICA
 function gerarPartida(){
-if(confrontos.length>= (times.length*(times.length-1))/2){
+if(confrontos.length >= (times.length*(times.length-1))/2){
 confrontos=[];
 }
 let t1,t2,comb;
@@ -181,25 +212,29 @@ document.getElementById("jogo").innerHTML=`${atual[0]} VS ${atual[1]}`;
 resetTimer();
 }
 
+// REGISTRAR VENCEDOR
 function vencedor(num){
 clearInterval(intervalo);
-document.getElementById("torcida").play();
 let nome=atual[num-1];
+vitorias[nome]++;
+document.getElementById("torcida").play();
 document.getElementById("jogo").innerHTML=`🏆 <span class="vencedor">${nome} venceu!</span>`;
-setTimeout(()=>{
-gerarPartida();
-},3000);
+atualizarRanking();
+setTimeout(()=>{gerarPartida();},3000);
 }
 
+// CRONÔMETRO
 function resetTimer(){
 tempo=900;
 updateTimer();
+clearInterval(intervalo);
 intervalo=setInterval(()=>{
 tempo--;
 updateTimer();
 if(tempo<=0){
 clearInterval(intervalo);
 document.getElementById("fim").play();
+alert("Tempo esgotado!");
 }
 },1000);
 }
@@ -207,14 +242,24 @@ document.getElementById("fim").play();
 function updateTimer(){
 let min=Math.floor(tempo/60);
 let seg=tempo%60;
-document.getElementById("timer").innerHTML=
+document.getElementById("timer").innerText=
 (min<10?"0":"")+min+":"+(seg<10?"0":"")+seg;
 }
 
-function voltar(){
-document.getElementById("cadastro").style.display="block";
-document.getElementById("partidas").style.display="none";
+// ATUALIZAR RANKING
+function atualizarRanking(){
+let rankingDiv = document.getElementById("ranking");
+rankingDiv.innerHTML="";
+let ordenado = Object.entries(vitorias).sort((a,b)=>b[1]-a[1]);
+ordenado.forEach(([nome,pontos],index)=>{
+rankingDiv.innerHTML+=`<div>${index+1}º - ${nome} (${pontos} vitórias)</div>`;
+});
 }
+
+// INICIALIZA LISTA
+mostrarTimes();
+atualizarRanking();
+
 </script>
 
 </body>
