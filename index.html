@@ -133,149 +133,179 @@ Criado por <span>Murilo Pompeo</span>
 <audio id="musica" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
 
 <script>
-// Dados do sistema
+// ===== DADOS =====
 let times=[];
 let vitorias={};
 let confrontos=[];
 let atual=[];
 let tempo=900;
 let intervalo;
-let streakVencedor=0; // Contador de partidas consecutivas do vencedor
+let streakVencedor=0; // partidas consecutivas do vencedor
 
-// ADICIONAR TIME
+// ===== LOCAL STORAGE =====
+const STORAGE_KEY="mixplay_times";
+
+function salvar(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({times,vitorias,confrontos,atual,streakVencedor}));
+}
+
+function carregar(){
+  let data = localStorage.getItem(STORAGE_KEY);
+  if(data){
+    let obj = JSON.parse(data);
+    times=obj.times || [];
+    vitorias=obj.vitorias || {};
+    confrontos=obj.confrontos || [];
+    atual=obj.atual || [];
+    streakVencedor=obj.streakVencedor || 0;
+  }
+}
+
+// ===== FUNÇÕES DE CADASTRO =====
 function addTime(){
-let nome=document.getElementById("nomeTime").value;
-if(nome.trim()!="" && !times.includes(nome)){
-times.push(nome);
-vitorias[nome]=0;
-document.getElementById("nomeTime").value="";
-mostrarTimes();
-atualizarRanking();
-}
+  let nome=document.getElementById("nomeTime").value.trim();
+  if(nome!="" && !times.includes(nome)){
+    times.push(nome);
+    vitorias[nome]=0;
+    document.getElementById("nomeTime").value="";
+    mostrarTimes();
+    atualizarRanking();
+    salvar();
+  }
 }
 
-// MOSTRAR TIMES CADASTRADOS
 function mostrarTimes(){
-let lista=document.getElementById("lista");
-lista.innerHTML="";
-times.forEach((t,i)=>{
-lista.innerHTML+=`<div>${t} <button onclick="remover(${i})">X</button></div>`;
-});
+  let lista=document.getElementById("lista");
+  lista.innerHTML="";
+  times.forEach((t,i)=>{
+    lista.innerHTML+=`<div>${t} <button onclick="remover(${i})">X</button></div>`;
+  });
 }
 
-// REMOVER TIME
 function remover(i){
-let nomeRemovido = times[i];
-if(!confirm("Deseja excluir o time " + nomeRemovido + "?")) return;
-times.splice(i,1);
-delete vitorias[nomeRemovido];
-mostrarTimes();
-atualizarRanking();
+  let nomeRemovido = times[i];
+  if(!confirm("Deseja excluir o time " + nomeRemovido + "?")) return;
+  times.splice(i,1);
+  delete vitorias[nomeRemovido];
+  mostrarTimes();
+  atualizarRanking();
+  salvar();
 }
 
-// INICIAR PARTIDAS
+// ===== INICIAR PARTIDAS =====
 function iniciar(){
-if(times.length<2){alert("Cadastre pelo menos 2 times"); return;}
-document.getElementById("cadastro").style.display="none";
-document.getElementById("partidas").style.display="block";
-document.getElementById("musica").play();
-gerarPartida();
-atualizarRanking();
+  if(times.length<2){alert("Cadastre pelo menos 2 times"); return;}
+  document.getElementById("cadastro").style.display="none";
+  document.getElementById("partidas").style.display="block";
+  document.getElementById("musica").play();
+  if(atual.length==0) gerarPartida();
+  else document.getElementById("jogo").innerHTML=`${atual[0]} VS ${atual[1]}`;
+  resetTimer();
+  atualizarRanking();
 }
 
-// VOLTAR PARA CADASTRO
+// ===== VOLTAR =====
 function voltar(){
-document.getElementById("cadastro").style.display="block";
-document.getElementById("partidas").style.display="none";
-clearInterval(intervalo);
-resetTimer();
-streakVencedor=0;
+  document.getElementById("cadastro").style.display="block";
+  document.getElementById("partidas").style.display="none";
+  clearInterval(intervalo);
+  resetTimer();
+  streakVencedor=0;
+  salvar();
 }
 
-// GERAR PARTIDA AUTOMÁTICA
+// ===== GERAR PARTIDA =====
 function gerarPartida(){
-if(confrontos.length >= (times.length*(times.length-1))/2){
-confrontos=[];
-}
-let t1,t2,comb;
+  if(confrontos.length >= (times.length*(times.length-1))/2){
+    confrontos=[];
+  }
 
-if(streakVencedor>0){
-t1=atual[streakVencedor>=2?1:0]; // mantém vencedor se ainda não jogou 2 vezes
-t2=Math.floor(Math.random()*times.length);
-while(times[t2]==t1) t2=Math.floor(Math.random()*times.length);
-} else {
-do{
-t1=Math.floor(Math.random()*times.length);
-t2=Math.floor(Math.random()*times.length);
-}while(t1==t2);
+  let t1,t2,comb;
+  if(streakVencedor>0){
+    t1=atual[0]; // mantém vencedor
+    do{ t2=Math.floor(Math.random()*times.length); }while(times[t2]==t1);
+    t2=times[t2];
+  } else {
+    do{
+      t1=Math.floor(Math.random()*times.length);
+      t2=Math.floor(Math.random()*times.length);
+    }while(t1==t2);
+    t1=times[t1];
+    t2=times[t2];
+  }
+
+  comb=[t1,t2].sort().join("-");
+  if(confrontos.includes(comb)){
+    gerarPartida();
+    return;
+  }
+  confrontos.push(comb);
+  atual=[t1,t2];
+  document.getElementById("jogo").innerHTML=`${t1} VS ${t2}`;
+  resetTimer();
+  salvar();
 }
 
-comb=[times[t1],times[t2]].sort().join("-");
-if(confrontos.includes(comb)){
-gerarPartida();
-return;
-}
-confrontos.push(comb);
-atual=[times[t1],times[t2]];
-document.getElementById("jogo").innerHTML=`${atual[0]} VS ${atual[1]}`;
-resetTimer();
-}
-
-// REGISTRAR VENCEDOR
+// ===== VENCEDOR =====
 function vencedor(num){
-clearInterval(intervalo);
-let nome=atual[num-1];
-vitorias[nome]++;
-document.getElementById("torcida").play();
-document.getElementById("jogo").innerHTML=`🏆 <span class="vencedor">${nome} venceu!</span>`;
-atualizarRanking();
+  clearInterval(intervalo);
+  let nome = atual[num-1];
+  if(!nome) return; // previne undefined
+  vitorias[nome]++;
+  document.getElementById("torcida").play();
+  document.getElementById("jogo").innerHTML=`🏆 <span class="vencedor">${nome} venceu!</span>`;
+  atualizarRanking();
 
-// Atualiza streak
-streakVencedor = (streakVencedor>0 && atual[num-1]==atual[0])? streakVencedor+1 : 1;
+  streakVencedor = (streakVencedor>0 && nome==atual[0]) ? streakVencedor+1 : 1;
+  if(streakVencedor>2) streakVencedor=0;
 
-// Limita a 2 partidas consecutivas
-if(streakVencedor>2) streakVencedor=0;
-
-setTimeout(()=>{gerarPartida();},3000);
+  setTimeout(()=>{gerarPartida();},3000);
+  salvar();
 }
 
-// CRONÔMETRO
+// ===== CRONÔMETRO =====
 function resetTimer(){
-tempo=900;
-updateTimer();
-clearInterval(intervalo);
-intervalo=setInterval(()=>{
-tempo--;
-updateTimer();
-if(tempo<=0){
-clearInterval(intervalo);
-document.getElementById("fim").play();
-alert("Tempo esgotado!");
-}
-},1000);
+  tempo=900;
+  updateTimer();
+  clearInterval(intervalo);
+  intervalo=setInterval(()=>{
+    tempo--;
+    updateTimer();
+    if(tempo<=0){
+      clearInterval(intervalo);
+      document.getElementById("fim").play();
+      alert("Tempo esgotado!");
+    }
+  },1000);
 }
 
 function updateTimer(){
-let min=Math.floor(tempo/60);
-let seg=tempo%60;
-document.getElementById("timer").innerText=
-(min<10?"0":"")+min+":"+(seg<10?"0":"")+seg;
+  let min=Math.floor(tempo/60);
+  let seg=tempo%60;
+  document.getElementById("timer").innerText=
+    (min<10?"0":"")+min+":"+(seg<10?"0":"")+seg;
 }
 
-// ATUALIZAR RANKING
+// ===== RANKING =====
 function atualizarRanking(){
-let rankingDiv = document.getElementById("ranking");
-rankingDiv.innerHTML="";
-let ordenado = Object.entries(vitorias).sort((a,b)=>b[1]-a[1]);
-ordenado.forEach(([nome,pontos],index)=>{
-rankingDiv.innerHTML+=`<div>${index+1}º - ${nome} (${pontos} vitórias)</div>`;
-});
+  let rankingDiv=document.getElementById("ranking");
+  rankingDiv.innerHTML="";
+  let ordenado=Object.entries(vitorias).sort((a,b)=>b[1]-a[1]);
+  ordenado.forEach(([nome,pontos],index)=>{
+    rankingDiv.innerHTML+=`<div>${index+1}º - ${nome} (${pontos} vitórias)</div>`;
+  });
 }
 
-// INICIALIZA LISTA
+// ===== INICIALIZAÇÃO =====
+carregar();
 mostrarTimes();
 atualizarRanking();
-
+if(atual.length>0){
+  document.getElementById("cadastro").style.display="none";
+  document.getElementById("partidas").style.display="block";
+  document.getElementById("jogo").innerHTML=`${atual[0]} VS ${atual[1]}`;
+  resetTimer();
+}
 </script>
 
 </body>
