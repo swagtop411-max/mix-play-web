@@ -1,89 +1,97 @@
 <script>
 
-let teams = []
-let currentMatch = []
-let wins = {}
-let matchNumber = 0
+var teams = [];
+var wins = {};
+var currentMatch = [];
+var matchNumber = 0;
 
 function addTeam(){
-let input = document.getElementById("teamInput")
-let name = input.value.trim()
+var input = document.getElementById("teamInput");
+if(!input) return;
+
+var name = input.value.trim();
 
 if(name === ""){
-alert("Digite um nome")
-return
+alert("Digite um nome");
+return;
 }
 
-if(teams.includes(name)){
-alert("Esse time já foi adicionado")
-return
+if(teams.indexOf(name) !== -1){
+alert("Time já existe");
+return;
 }
 
-teams.push(name)
-wins[name] = 0
-input.value = ""
-renderTeams()
+teams.push(name);
+wins[name] = 0;
+input.value = "";
+renderTeams();
 }
 
 function renderTeams(){
-let list = document.getElementById("teamList")
-list.innerHTML = ""
-teams.forEach(team=>{
-list.innerHTML += `<div class="team">${team}</div>`
-})
+var list = document.getElementById("teamList");
+if(!list) return;
+
+list.innerHTML = "";
+
+for(var i=0; i<teams.length; i++){
+list.innerHTML += "<div class='team'>" + teams[i] + "</div>";
+}
 }
 
 function start(){
 if(teams.length < 2){
-alert("Adicione pelo menos 2 duplas")
-return
+alert("Adicione pelo menos 2 duplas");
+return;
 }
 
-document.getElementById("setup").style.display="none"
-document.getElementById("game").style.display="block"
-nextMatch()
+document.getElementById("setup").style.display = "none";
+document.getElementById("game").style.display = "block";
+
+nextMatch();
 }
 
 function nextMatch(){
-if(teams.length < 2) return
+if(teams.length < 2) return;
 
-currentMatch = [
-teams[Math.floor(Math.random()*teams.length)],
-teams[Math.floor(Math.random()*teams.length)]
-]
+var i1 = Math.floor(Math.random()*teams.length);
+var i2 = Math.floor(Math.random()*teams.length);
 
-while(currentMatch[0] === currentMatch[1]){
-currentMatch[1] = teams[Math.floor(Math.random()*teams.length)]
+while(i1 === i2){
+i2 = Math.floor(Math.random()*teams.length);
 }
 
-document.getElementById("t1").innerText = currentMatch[0]
-document.getElementById("t2").innerText = currentMatch[1]
+currentMatch = [teams[i1], teams[i2]];
 
-matchNumber++
-document.getElementById("matchCount").innerText = "Partida #" + matchNumber
+document.getElementById("t1").innerText = currentMatch[0];
+document.getElementById("t2").innerText = currentMatch[1];
 
-renderRanking()
+matchNumber++;
+document.getElementById("matchCount").innerText = "Partida #" + matchNumber;
+
+renderRanking();
 }
 
 function win(index){
-let winner = currentMatch[index]
-wins[winner]++
-nextMatch()
+var winner = currentMatch[index];
+wins[winner]++;
+nextMatch();
 }
 
 function renderRanking(){
-let ranking = document.getElementById("ranking")
-ranking.innerHTML = "<h3>Ranking</h3>"
+var ranking = document.getElementById("ranking");
+ranking.innerHTML = "<h3>Ranking</h3>";
 
-Object.keys(wins)
-.sort((a,b)=>wins[b]-wins[a])
-.forEach(team=>{
-ranking.innerHTML += `<div>${team} - ${wins[team]} vitórias</div>`
-})
+var sorted = Object.keys(wins).sort(function(a,b){
+return wins[b] - wins[a];
+});
+
+for(var i=0; i<sorted.length; i++){
+ranking.innerHTML += "<div>" + sorted[i] + " - " + wins[sorted[i]] + " vitórias</div>";
+}
 }
 
 function reset(){
-location.reload()
+location.reload();
 }
 
 </script>
