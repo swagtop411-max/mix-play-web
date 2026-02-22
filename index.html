@@ -146,10 +146,7 @@ let vencedorAtual="";
 // ===== LOCAL STORAGE =====
 const STORAGE_KEY="mixplay_times";
 
-function salvar(){
-  localStorage.setItem(STORAGE_KEY,JSON.stringify({times,vitorias,confrontos,atual,streakVencedor,vencedorAtual}));
-}
-
+// Carrega times e vitórias, mas **não mantém a tela de partida aberta**
 function carregar(){
   let data = localStorage.getItem(STORAGE_KEY);
   if(data){
@@ -157,10 +154,15 @@ function carregar(){
     times=obj.times || [];
     vitorias=obj.vitorias || {};
     confrontos=obj.confrontos || [];
-    atual=obj.atual || [];
-    streakVencedor=obj.streakVencedor || 0;
-    vencedorAtual=obj.vencedorAtual || "";
+    atual=[]; // limpa partida atual
+    streakVencedor=0;
+    vencedorAtual="";
   }
+}
+
+// Salvar dados
+function salvar(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({times,vitorias,confrontos}));
 }
 
 // ===== FUNÇÕES DE CADASTRO =====
@@ -200,9 +202,7 @@ function iniciar(){
   document.getElementById("cadastro").style.display="none";
   document.getElementById("partidas").style.display="block";
   document.getElementById("musica").play();
-  if(atual.length==0) gerarPartida();
-  else document.getElementById("jogo").innerHTML=`${atual[0]} VS ${atual[1]}`;
-  resetTimer();
+  gerarPartida();
   atualizarRanking();
 }
 
@@ -214,7 +214,6 @@ function voltar(){
   resetTimer();
   streakVencedor=0;
   vencedorAtual="";
-  salvar();
 }
 
 // ===== GERAR PARTIDA =====
@@ -246,9 +245,11 @@ function gerarPartida(){
     vencedorAtual="";
   }
 
+  t1 = (typeof t1 === "number")? times[t1]:t1;
+  t2 = (typeof t2 === "number")? times[t2]:t2;
+
   let comb=[t1,t2].sort().join("-");
   if(confrontos.includes(comb)){
-    // Garante que não repita o confronto, tenta novamente
     gerarPartida();
     return;
   }
@@ -280,13 +281,12 @@ function vencedor(num){
   }
 
   // Limite de 2 partidas consecutivas
-  if(streakVencedor>2){
+  if(streakVencedor>=2){
     streakVencedor=0;
     vencedorAtual="";
   }
 
   setTimeout(()=>{gerarPartida();},3000);
-  salvar();
 }
 
 // ===== CRONÔMETRO =====
@@ -326,12 +326,6 @@ function atualizarRanking(){
 carregar();
 mostrarTimes();
 atualizarRanking();
-if(atual.length>0){
-  document.getElementById("cadastro").style.display="none";
-  document.getElementById("partidas").style.display="block";
-  document.getElementById("jogo").innerHTML=`${atual[0]} VS ${atual[1]}`;
-  resetTimer();
-}
 </script>
 
 </body>
