@@ -1,331 +1,206 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mix Play Beach Arena</title>
+<title>Mix Play - Vôlei de Areia</title>
 
 <style>
-
 body{
 margin:0;
-font-family:'Segoe UI',sans-serif;
-color:white;
+font-family:Arial, Helvetica, sans-serif;
+background:linear-gradient(to top,#c2a165,#f5deb3,#87ceeb);
 text-align:center;
-overflow:hidden;
-
-/* CÉU */
-background: linear-gradient(to top,#f4d03f 0%,#f7dc6f 35%,#5dade2 70%,#2e86c1 100%);
+overflow-x:hidden;
 }
 
-/* SOL REALISTA */
-.sun{
-position:fixed;
-top:60px;
-right:80px;
-width:140px;
-height:140px;
-background:radial-gradient(circle,#fff59d,#fbc02d);
-border-radius:50%;
-box-shadow:0 0 120px #ffd54f;
-animation:sunPulse 4s ease-in-out infinite;
-z-index:-1;
+.logo{
+width:180px;
+margin-top:20px;
+animation:flutuar 3s ease-in-out infinite;
 }
 
-@keyframes sunPulse{
-0%{transform:scale(1);}
-50%{transform:scale(1.1);}
-100%{transform:scale(1);}
+@keyframes flutuar{
+0%{transform:translateY(0px);}
+50%{transform:translateY(-10px);}
+100%{transform:translateY(0px);}
 }
 
-/* MAR ANIMADO */
-.ocean{
-position:fixed;
-bottom:0;
-width:100%;
-height:35%;
-background:linear-gradient(to top,#1e88e5,#42a5f5);
-animation:waveMove 6s linear infinite;
+h1{
+color:#fff;
+text-shadow:2px 2px 5px #000;
 }
 
-@keyframes waveMove{
-0%{background-position:0 0;}
-100%{background-position:1000px 0;}
-}
-
-/* AREIA TEXTURIZADA */
-.sand{
-position:fixed;
-bottom:0;
-width:100%;
-height:20%;
-background:repeating-linear-gradient(
-45deg,
-#f4d03f,
-#f4d03f 10px,
-#f7dc6f 10px,
-#f7dc6f 20px
-);
-}
-
-/* BOLA REALISTA */
-.ball{
-position:fixed;
-bottom:150px;
-left:-80px;
-font-size:70px;
-animation:realBall 6s ease-in-out infinite;
-z-index:2;
-}
-
-@keyframes realBall{
-0%{left:-80px; bottom:160px; transform:rotate(0deg);}
-25%{bottom:300px;}
-50%{left:50%; bottom:180px; transform:rotate(360deg);}
-75%{bottom:320px;}
-100%{left:110%; bottom:160px; transform:rotate(720deg);}
-}
-
-/* SOMBRA DA BOLA */
-.ball-shadow{
-position:fixed;
-bottom:130px;
-left:-80px;
-width:60px;
-height:15px;
-background:rgba(0,0,0,0.4);
-border-radius:50%;
-filter:blur(4px);
-animation:shadowMove 6s ease-in-out infinite;
-}
-
-@keyframes shadowMove{
-0%{left:-80px; transform:scale(1);}
-25%{transform:scale(0.7);}
-50%{left:50%; transform:scale(1);}
-75%{transform:scale(0.6);}
-100%{left:110%; transform:scale(1);}
-}
-
-/* CARD */
-.card{
-background:rgba(0,0,0,0.6);
+.container{
+background:rgba(255,255,255,0.9);
 margin:20px;
 padding:20px;
-border-radius:20px;
-backdrop-filter:blur(10px);
-box-shadow:0 20px 60px rgba(0,0,0,0.6);
-position:relative;
-z-index:5;
+border-radius:15px;
+box-shadow:0 10px 25px rgba(0,0,0,0.3);
 }
 
-/* BOTÕES */
-button{
-padding:12px 20px;
+input, button{
+padding:10px;
 margin:5px;
+border-radius:8px;
 border:none;
-border-radius:10px;
-background:#ff6f00;
-color:white;
 font-size:16px;
+}
+
+button{
+background:#ff9800;
+color:white;
+font-weight:bold;
 cursor:pointer;
 transition:0.3s;
 }
 
 button:hover{
-transform:scale(1.1);
-background:#ffa000;
+background:#e68900;
+transform:scale(1.05);
 }
 
-input{
-padding:12px;
-border-radius:10px;
-border:none;
-}
-
-/* TIMER */
 #timer{
-font-size:48px;
+font-size:40px;
 font-weight:bold;
-color:#fff176;
-margin:15px 0;
-transition:0.3s;
+color:#d32f2f;
+margin:15px;
 }
 
-.timer-warning{
-color:#ff1744;
-animation:blink 1s infinite;
+.celebrar{
+animation:explodir 0.7s ease;
 }
 
-@keyframes blink{
-0%{opacity:1;}
-50%{opacity:0.3;}
-100%{opacity:1;}
-}
-
-/* ANIMAÇÃO VITÓRIA */
-.win-animation{
-animation:flash 0.4s ease 5;
-}
-
-@keyframes flash{
+@keyframes explodir{
 0%{transform:scale(1);}
-50%{transform:scale(1.12);}
+50%{transform:scale(1.3);}
 100%{transform:scale(1);}
 }
-
 </style>
 </head>
 
 <body>
 
-<div class="sun"></div>
-<div class="ocean"></div>
-<div class="sand"></div>
-<div class="ball">🏐</div>
-<div class="ball-shadow"></div>
+<!-- SUA IMAGEM -->
+<img src="file_000000009aac71f5a38536be785d2478.png" class="logo">
 
-<h1>🏖️ Mix Play Beach Arena</h1>
+<h1>🏐 Mix Play - Vôlei de Areia</h1>
 
-<div id="setup" class="card">
-<h2>Adicionar Duplas</h2>
-<input id="teamInput" placeholder="Nome da dupla">
-<button onclick="addTeam()">Adicionar</button>
-<div id="teamList"></div>
-<br>
-<button onclick="start()">Iniciar Jogo</button>
-</div>
+<div class="container">
 
-<div id="game" class="card" style="display:none;">
-<h2>Partida Atual</h2>
+<h3>Cadastrar Time</h3>
+<input type="text" id="nomeTime" placeholder="Nome do Time">
+<button onclick="adicionarTime()">Adicionar</button>
+
+<h3>Times Cadastrados</h3>
+<ul id="listaTimes"></ul>
+
+<button onclick="sortear()">Sortear Confronto</button>
+
+<h3>Confronto Atual</h3>
+<p id="confronto"></p>
+
 <div id="timer">15:00</div>
-<h3 id="t1"></h3>
-VS
-<h3 id="t2"></h3>
-<br>
-<button onclick="win(0)">Vitória Time 1</button>
-<button onclick="win(1)">Vitória Time 2</button>
-<div id="ranking"></div>
-<br>
-<button onclick="resetGame()">Resetar</button>
+<button onclick="iniciar()">Iniciar Jogo</button>
+<button onclick="vitoria()">Registrar Vitória</button>
+
 </div>
+
+<audio id="apito" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+<audio id="torcida" src="https://www.soundjay.com/human/crowd-cheer-01.wav"></audio>
+<audio id="musica" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
 
 <script>
+let times = [];
+let confrontosFeitos = [];
+let minutos = 15;
+let segundos = 0;
+let intervalo;
 
-var teams=[];
-var wins={};
-var matchHistory=[];
-var currentMatch=[];
-var timerInterval;
-var totalSeconds=900;
+const musica = document.getElementById("musica");
+musica.volume = 0.2;
+musica.play();
 
-/* ÁUDIOS LIBERADOS APÓS INTERAÇÃO */
-var crowd=new Audio("https://actions.google.com/sounds/v1/crowds/large_crowd_cheer.ogg");
-var whistle=new Audio("https://actions.google.com/sounds/v1/sports/whistle.ogg");
-var beachAmbience=new Audio("https://actions.google.com/sounds/v1/water/ocean_waves.ogg");
-beachAmbience.loop=true;
-beachAmbience.volume=0.3;
-
-function addTeam(){
-var name=document.getElementById("teamInput").value.trim();
-if(name===""||teams.includes(name)) return;
-teams.push(name);
-wins[name]=0;
-document.getElementById("teamInput").value="";
-renderTeams();
+function adicionarTime(){
+let nome = document.getElementById("nomeTime").value;
+if(nome === "") return;
+times.push(nome);
+atualizarLista();
+document.getElementById("nomeTime").value="";
 }
 
-function renderTeams(){
-var list=document.getElementById("teamList");
-list.innerHTML="";
-teams.forEach(t=>{list.innerHTML+="<div>"+t+"</div>";});
-}
-
-function start(){
-if(teams.length<2){alert("Adicione pelo menos 2 duplas");return;}
-document.getElementById("setup").style.display="none";
-document.getElementById("game").style.display="block";
-
-/* Ativa música ambiente */
-beachAmbience.play();
-
-generateMatch();
-}
-
-function generateMatch(){
-
-if(matchHistory.length >= (teams.length*(teams.length-1))/2){
-matchHistory=[];
-}
-
-var t1,t2,combo;
-do{
-t1=teams[Math.floor(Math.random()*teams.length)];
-t2=teams[Math.floor(Math.random()*teams.length)];
-combo=[t1,t2].sort().join("-");
-}while(t1===t2||matchHistory.includes(combo));
-
-matchHistory.push(combo);
-currentMatch=[t1,t2];
-
-document.getElementById("t1").innerText=t1;
-document.getElementById("t2").innerText=t2;
-
-clearInterval(timerInterval);
-totalSeconds=900;
-document.getElementById("timer").innerText="15:00";
-document.getElementById("timer").classList.remove("timer-warning");
-
-startTimer();
-renderRanking();
-}
-
-function startTimer(){
-timerInterval=setInterval(function(){
-totalSeconds--;
-var min=Math.floor(totalSeconds/60);
-var sec=totalSeconds%60;
-if(sec<10) sec="0"+sec;
-document.getElementById("timer").innerText=min+":"+sec;
-
-if(totalSeconds<=10){
-document.getElementById("timer").classList.add("timer-warning");
-}
-
-if(totalSeconds<=0){
-clearInterval(timerInterval);
-whistle.play();
-generateMatch();
-}
-},1000);
-}
-
-function win(index){
-wins[currentMatch[index]]++;
-crowd.play();
-
-var card=document.getElementById("game");
-card.classList.add("win-animation");
-setTimeout(()=>{card.classList.remove("win-animation");},2000);
-
-clearInterval(timerInterval);
-generateMatch();
-}
-
-function renderRanking(){
-var ranking=document.getElementById("ranking");
-ranking.innerHTML="<h3>Ranking</h3>";
-var sorted=Object.keys(wins).sort((a,b)=>wins[b]-wins[a]);
-sorted.forEach((t,i)=>{
-ranking.innerHTML+="<div>"+(i+1)+"º - "+t+" ("+wins[t]+" vitórias)</div>";
+function atualizarLista(){
+let lista = document.getElementById("listaTimes");
+lista.innerHTML="";
+times.forEach(t=>{
+lista.innerHTML += "<li>"+t+"</li>";
 });
 }
 
-function resetGame(){
-location.reload();
+function sortear(){
+if(times.length < 2){
+alert("Cadastre pelo menos 2 times");
+return;
 }
 
+let t1, t2, chave;
+
+do{
+t1 = times[Math.floor(Math.random()*times.length)];
+t2 = times[Math.floor(Math.random()*times.length)];
+}while(t1===t2);
+
+chave = t1+" vs "+t2;
+
+if(confrontosFeitos.includes(chave)){
+confrontosFeitos = [];
+}
+
+confrontosFeitos.push(chave);
+document.getElementById("confronto").innerText = chave;
+resetarTempo();
+}
+
+function resetarTempo(){
+minutos = 15;
+segundos = 0;
+atualizarTimer();
+}
+
+function iniciar(){
+clearInterval(intervalo);
+intervalo = setInterval(()=>{
+if(segundos===0){
+if(minutos===0){
+clearInterval(intervalo);
+document.getElementById("apito").play();
+alert("Tempo Encerrado!");
+return;
+}
+minutos--;
+segundos=59;
+}else{
+segundos--;
+}
+atualizarTimer();
+},1000);
+}
+
+function atualizarTimer(){
+let m = minutos<10?"0"+minutos:minutos;
+let s = segundos<10?"0"+segundos:segundos;
+document.getElementById("timer").innerText = m+":"+s;
+}
+
+function vitoria(){
+document.getElementById("torcida").play();
+let confronto = document.getElementById("confronto");
+confronto.classList.add("celebrar");
+setTimeout(()=>{
+confronto.classList.remove("celebrar");
+},700);
+alert("Vitória registrada! 🏆");
+}
 </script>
 
 </body>
