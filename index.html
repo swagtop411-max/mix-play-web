@@ -3,49 +3,87 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mix Play PRO</title>
+<title>Mix Play Beach Edition</title>
 
 <style>
+
 body{
 margin:0;
-font-family: 'Segoe UI', sans-serif;
-background: linear-gradient(to top, #f4d03f, #16a085);
+font-family:'Segoe UI',sans-serif;
 color:white;
 text-align:center;
+overflow-x:hidden;
+
+/* Fundo praia */
+background: linear-gradient(to top, #f4d03f 0%, #f7dc6f 40%, #87ceeb 100%);
+}
+
+/* SOL */
+body::before{
+content:"";
+position:fixed;
+top:60px;
+right:60px;
+width:120px;
+height:120px;
+background: radial-gradient(circle,#fff59d,#fbc02d);
+border-radius:50%;
+box-shadow:0 0 80px #ffd54f;
+z-index:-1;
+}
+
+/* BOLA ANIMADA */
+.ball{
+position:fixed;
+bottom:40px;
+left:-100px;
+font-size:60px;
+animation:ballMove 8s linear infinite;
+z-index:0;
+}
+
+@keyframes ballMove{
+0%{left:-100px; transform:rotate(0deg);}
+50%{bottom:120px;}
+100%{left:110%; transform:rotate(720deg);}
 }
 
 h1{
 margin-top:20px;
-font-size:28px;
+font-size:30px;
+text-shadow:0 3px 6px rgba(0,0,0,0.4);
 }
 
 .card{
-background:rgba(0,0,0,0.6);
+background:rgba(0,0,0,0.55);
 margin:20px;
 padding:20px;
-border-radius:15px;
-box-shadow:0 10px 30px rgba(0,0,0,0.4);
+border-radius:20px;
+backdrop-filter:blur(6px);
+box-shadow:0 15px 40px rgba(0,0,0,0.4);
 animation:fadeIn 0.6s ease;
+position:relative;
+z-index:2;
 }
 
 input,button{
 padding:12px;
 margin:5px;
 border:none;
-border-radius:8px;
+border-radius:10px;
 font-size:16px;
 }
 
 button{
-background:#ff9800;
+background:#ff6f00;
 color:white;
 cursor:pointer;
 transition:0.3s;
 }
 
 button:hover{
-transform:scale(1.05);
-background:#ffc107;
+transform:scale(1.08);
+background:#ff9800;
 }
 
 .team{
@@ -56,10 +94,15 @@ border-radius:8px;
 }
 
 #timer{
-font-size:32px;
+font-size:42px;
 margin:15px 0;
 font-weight:bold;
-color:#ffeb3b;
+color:#fff176;
+}
+
+.timer-warning{
+color:#ff1744;
+animation:blink 1s infinite;
 }
 
 .vs{
@@ -67,16 +110,35 @@ font-size:22px;
 margin:10px 0;
 }
 
+.win-animation{
+animation:flash 0.5s ease 3;
+}
+
+@keyframes blink{
+0%{opacity:1;}
+50%{opacity:0.3;}
+100%{opacity:1;}
+}
+
+@keyframes flash{
+0%{transform:scale(1);}
+50%{transform:scale(1.1);}
+100%{transform:scale(1);}
+}
+
 @keyframes fadeIn{
 from{opacity:0; transform:translateY(10px);}
 to{opacity:1; transform:translateY(0);}
 }
+
 </style>
 </head>
 
 <body>
 
-<h1>🏐 Mix Play PRO</h1>
+<div class="ball">🏐</div>
+
+<h1>🏖️ Mix Play Beach Edition</h1>
 
 <div id="setup" class="card">
 <h2>Adicionar Duplas</h2>
@@ -114,14 +176,15 @@ var wins={};
 var matchHistory=[];
 var currentMatch=[];
 var timerInterval;
-var totalSeconds=900; // 15 minutos
+var totalSeconds=900;
+
+var endSound=new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
+var winSound=new Audio("https://actions.google.com/sounds/v1/crowds/large_crowd_cheer.ogg");
 
 function addTeam(){
 var input=document.getElementById("teamInput");
 var name=input.value.trim();
-
-if(name==="" || teams.includes(name)) return;
-
+if(name===""||teams.includes(name)) return;
 teams.push(name);
 wins[name]=0;
 input.value="";
@@ -132,7 +195,7 @@ function renderTeams(){
 var list=document.getElementById("teamList");
 list.innerHTML="";
 teams.forEach(t=>{
-list.innerHTML+= "<div class='team'>"+t+"</div>";
+list.innerHTML+="<div class='team'>"+t+"</div>";
 });
 }
 
@@ -141,27 +204,23 @@ if(teams.length<2){
 alert("Adicione pelo menos 2 duplas");
 return;
 }
-
 document.getElementById("setup").style.display="none";
 document.getElementById("game").style.display="block";
-
 generateMatch();
 }
 
 function generateMatch(){
 
-// Se todos já se enfrentaram → reinicia ciclo
 if(matchHistory.length >= (teams.length*(teams.length-1))/2){
 matchHistory=[];
 }
 
-// Gera confronto único
 var t1,t2,combo;
 do{
 t1=teams[Math.floor(Math.random()*teams.length)];
 t2=teams[Math.floor(Math.random()*teams.length)];
 combo=[t1,t2].sort().join("-");
-}while(t1===t2 || matchHistory.includes(combo));
+}while(t1===t2||matchHistory.includes(combo));
 
 matchHistory.push(combo);
 currentMatch=[t1,t2];
@@ -169,34 +228,44 @@ currentMatch=[t1,t2];
 document.getElementById("t1").innerText=t1;
 document.getElementById("t2").innerText=t2;
 
+clearInterval(timerInterval);
+totalSeconds=900;
+document.getElementById("timer").innerText="15:00";
+document.getElementById("timer").classList.remove("timer-warning");
+
 startTimer();
 renderRanking();
 }
 
 function startTimer(){
-clearInterval(timerInterval);
-totalSeconds=900;
-
 timerInterval=setInterval(function(){
 totalSeconds--;
 var min=Math.floor(totalSeconds/60);
 var sec=totalSeconds%60;
-
 if(sec<10) sec="0"+sec;
-
 document.getElementById("timer").innerText=min+":"+sec;
+
+if(totalSeconds<=10){
+document.getElementById("timer").classList.add("timer-warning");
+}
 
 if(totalSeconds<=0){
 clearInterval(timerInterval);
+endSound.play();
 generateMatch();
 }
-
 },1000);
 }
 
 function win(index){
 var winner=currentMatch[index];
 wins[winner]++;
+winSound.play();
+
+var card=document.getElementById("game");
+card.classList.add("win-animation");
+setTimeout(()=>{card.classList.remove("win-animation");},1500);
+
 clearInterval(timerInterval);
 generateMatch();
 }
@@ -204,9 +273,7 @@ generateMatch();
 function renderRanking(){
 var ranking=document.getElementById("ranking");
 ranking.innerHTML="<h3>Ranking</h3>";
-
 var sorted=Object.keys(wins).sort((a,b)=>wins[b]-wins[a]);
-
 sorted.forEach((t,i)=>{
 ranking.innerHTML+="<div>"+(i+1)+"º - "+t+" ("+wins[t]+" vitórias)</div>";
 });
