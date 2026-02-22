@@ -91,11 +91,10 @@ animation:explodir 0.6s ease;
 <!-- TELA PARTIDAS -->
 <div id="telaPartidas" class="container hidden">
 
-<button onclick="sortear()">Sortear Confronto</button>
-<h3 id="confronto"></h3>
+<h3 id="confronto">Clique em iniciar para gerar partida</h3>
 
 <div id="timer">15:00</div>
-<button onclick="iniciar()">Iniciar</button>
+<button onclick="iniciar()">Iniciar Jogo</button>
 
 <div id="botoesVitoria"></div>
 
@@ -138,6 +137,7 @@ function mostrarPartidas(){
 document.getElementById("telaCadastro").classList.add("hidden");
 document.getElementById("telaPartidas").classList.remove("hidden");
 atualizarRanking();
+sortear(); // já gera primeira partida automaticamente
 }
 
 function voltar(){
@@ -153,6 +153,7 @@ return;
 
 let t1=times[Math.floor(Math.random()*times.length)];
 let t2;
+
 do{
 t2=times[Math.floor(Math.random()*times.length)];
 }while(t1===t2);
@@ -168,11 +169,13 @@ resetarTempo();
 }
 
 function registrarVitoria(nome){
+
 let time=times.find(t=>t.nome===nome);
 time.pontos+=3;
 localStorage.setItem("times",JSON.stringify(times));
 
 document.getElementById("torcida").play();
+
 document.getElementById("confronto").classList.add("vencedor");
 
 setTimeout(()=>{
@@ -180,6 +183,13 @@ document.getElementById("confronto").classList.remove("vencedor");
 },600);
 
 atualizarRanking();
+
+clearInterval(intervalo);
+
+// 🔥 Gera nova partida automaticamente
+setTimeout(()=>{
+sortear();
+},1000);
 }
 
 function atualizarRanking(){
