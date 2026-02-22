@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -41,8 +40,10 @@ button:hover{transform:scale(1.05);}
 
 <!-- BOTÃO DE PAGAMENTO -->
 <div id="pagamento">
-<button id="payButton">Desbloquear App</button>
-<p>Após desbloquear, você poderá cadastrar times e gerar partidas.</p>
+<a id="payButton" href="https://buy.stripe.com/test_XXXXXXXX?success_url=https://seusite.com/index.html?paid=true" target="_blank">
+<button>Desbloquear App</button>
+</a>
+<p>Após o pagamento, você será redirecionado automaticamente e poderá cadastrar times.</p>
 </div>
 
 <!-- TELA DE CADASTRO -->
@@ -76,10 +77,8 @@ Criado por <span>Murilo Pompeo</span>
 <audio id="musica" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
 
 <script>
-// BLOQUEIO INICIAL
+// DETECTA PAGAMENTO PELO SUCCESS_URL
 let desbloqueado = false;
-
-// Detecta parâmetro pago do Stripe Payment Link
 if(new URLSearchParams(window.location.search).get("paid") === "true"){
   desbloqueado = true;
   document.getElementById("pagamento").style.display="none";
@@ -88,20 +87,13 @@ if(new URLSearchParams(window.location.search).get("paid") === "true"){
   alert("Pagamento confirmado! Agora você pode cadastrar times e gerar partidas.");
 }
 
-// Dados
+// DADOS
 let times=[];
 let vitorias={};
 let confrontos=[];
 let atual=[];
 let tempo=900;
 let intervalo;
-
-// BOTÃO DE PAGAMENTO (abre Stripe Payment Link)
-const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/test_XXXXXXXX"; // substitua pelo seu link real
-document.getElementById("payButton").addEventListener("click",()=>{
-  window.open(STRIPE_PAYMENT_LINK,"_blank");
-  alert("Após o pagamento, retorne ao site e aguarde a liberação automática via ?paid=true");
-});
 
 // FUNÇÕES DE CADASTRO E PARTIDAS
 function addTime(){
