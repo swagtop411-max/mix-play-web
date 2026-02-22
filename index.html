@@ -3,48 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mix Play - Vôlei de Areia</title>
+<title>Mix Play - Cadastro</title>
 
 <style>
 body{
 margin:0;
-font-family:Arial, Helvetica, sans-serif;
-background:linear-gradient(to top,#c2a165,#f5deb3,#87ceeb);
+font-family:Arial, sans-serif;
+background:url("file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
+background-size:cover;
+color:white;
 text-align:center;
-overflow-x:hidden;
 }
 
-.logo{
-width:180px;
-margin-top:20px;
-animation:flutuar 3s ease-in-out infinite;
-}
-
-@keyframes flutuar{
-0%{transform:translateY(0px);}
-50%{transform:translateY(-10px);}
-100%{transform:translateY(0px);}
-}
-
-h1{
-color:#fff;
-text-shadow:2px 2px 5px #000;
+.overlay{
+background:rgba(0,0,0,0.6);
+min-height:100vh;
+padding:20px;
 }
 
 .container{
 background:rgba(255,255,255,0.9);
-margin:20px;
+color:black;
 padding:20px;
 border-radius:15px;
-box-shadow:0 10px 25px rgba(0,0,0,0.3);
+max-width:400px;
+margin:auto;
 }
 
-input, button{
+input,button{
 padding:10px;
 margin:5px;
-border-radius:8px;
 border:none;
-font-size:16px;
+border-radius:8px;
 }
 
 button{
@@ -52,156 +42,52 @@ background:#ff9800;
 color:white;
 font-weight:bold;
 cursor:pointer;
-transition:0.3s;
-}
-
-button:hover{
-background:#e68900;
-transform:scale(1.05);
-}
-
-#timer{
-font-size:40px;
-font-weight:bold;
-color:#d32f2f;
-margin:15px;
-}
-
-.celebrar{
-animation:explodir 0.7s ease;
-}
-
-@keyframes explodir{
-0%{transform:scale(1);}
-50%{transform:scale(1.3);}
-100%{transform:scale(1);}
 }
 </style>
 </head>
 
 <body>
-
-<!-- SUA IMAGEM -->
-<img src="file_000000009aac71f5a38536be785d2478.png" class="logo">
-
-<h1>🏐 Mix Play - Vôlei de Areia</h1>
+<div class="overlay">
+<h1>🏐 Mix Play</h1>
 
 <div class="container">
-
 <h3>Cadastrar Time</h3>
 <input type="text" id="nomeTime" placeholder="Nome do Time">
 <button onclick="adicionarTime()">Adicionar</button>
 
-<h3>Times Cadastrados</h3>
 <ul id="listaTimes"></ul>
 
-<button onclick="sortear()">Sortear Confronto</button>
-
-<h3>Confronto Atual</h3>
-<p id="confronto"></p>
-
-<div id="timer">15:00</div>
-<button onclick="iniciar()">Iniciar Jogo</button>
-<button onclick="vitoria()">Registrar Vitória</button>
-
+<button onclick="irParaPartidas()">Ir para Partidas</button>
+</div>
 </div>
 
-<audio id="apito" src="https://www.soundjay.com/button/beep-07.wav"></audio>
-<audio id="torcida" src="https://www.soundjay.com/human/crowd-cheer-01.wav"></audio>
-<audio id="musica" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
-
 <script>
-let times = [];
-let confrontosFeitos = [];
-let minutos = 15;
-let segundos = 0;
-let intervalo;
-
-const musica = document.getElementById("musica");
-musica.volume = 0.2;
-musica.play();
+let times = JSON.parse(localStorage.getItem("times")) || [];
 
 function adicionarTime(){
 let nome = document.getElementById("nomeTime").value;
-if(nome === "") return;
-times.push(nome);
-atualizarLista();
+if(nome==="") return;
+
+times.push({nome:nome, pontos:0});
+localStorage.setItem("times", JSON.stringify(times));
+
 document.getElementById("nomeTime").value="";
+atualizarLista();
 }
 
 function atualizarLista(){
 let lista = document.getElementById("listaTimes");
 lista.innerHTML="";
 times.forEach(t=>{
-lista.innerHTML += "<li>"+t+"</li>";
+lista.innerHTML+="<li>"+t.nome+"</li>";
 });
 }
 
-function sortear(){
-if(times.length < 2){
-alert("Cadastre pelo menos 2 times");
-return;
+function irParaPartidas(){
+window.location.href="partidas.html";
 }
 
-let t1, t2, chave;
-
-do{
-t1 = times[Math.floor(Math.random()*times.length)];
-t2 = times[Math.floor(Math.random()*times.length)];
-}while(t1===t2);
-
-chave = t1+" vs "+t2;
-
-if(confrontosFeitos.includes(chave)){
-confrontosFeitos = [];
-}
-
-confrontosFeitos.push(chave);
-document.getElementById("confronto").innerText = chave;
-resetarTempo();
-}
-
-function resetarTempo(){
-minutos = 15;
-segundos = 0;
-atualizarTimer();
-}
-
-function iniciar(){
-clearInterval(intervalo);
-intervalo = setInterval(()=>{
-if(segundos===0){
-if(minutos===0){
-clearInterval(intervalo);
-document.getElementById("apito").play();
-alert("Tempo Encerrado!");
-return;
-}
-minutos--;
-segundos=59;
-}else{
-segundos--;
-}
-atualizarTimer();
-},1000);
-}
-
-function atualizarTimer(){
-let m = minutos<10?"0"+minutos:minutos;
-let s = segundos<10?"0"+segundos:segundos;
-document.getElementById("timer").innerText = m+":"+s;
-}
-
-function vitoria(){
-document.getElementById("torcida").play();
-let confronto = document.getElementById("confronto");
-confronto.classList.add("celebrar");
-setTimeout(()=>{
-confronto.classList.remove("celebrar");
-},700);
-alert("Vitória registrada! 🏆");
-}
+atualizarLista();
 </script>
-
 </body>
 </html>
