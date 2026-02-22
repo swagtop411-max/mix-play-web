@@ -1,13 +1,15 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mix Play Web - Beach Edition</title>
+<title>Mix Play Web PRO - Comercial</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff9800">
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial, sans-serif;}
-
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
 body{
 background:url("file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
 background-size:cover;
@@ -17,93 +19,36 @@ min-height:100vh;
 display:flex;
 flex-direction:column;
 }
-
-.overlay{
-background:rgba(0,0,0,0.6);
-flex:1;
-padding:20px;
-}
-
-h1{
-margin-bottom:20px;
-text-shadow:0 0 15px orange;
-}
-
-input,button{
-padding:10px;
-margin:5px;
-border:none;
-border-radius:8px;
-}
-
-button{
-background:orange;
-color:black;
-font-weight:bold;
-cursor:pointer;
-transition:0.3s;
-}
-
-button:hover{
-transform:scale(1.05);
-}
-
-.lista-times{
-margin-top:15px;
-}
-
-.partida{
-margin-top:20px;
-font-size:22px;
-font-weight:bold;
-}
-
-.timer{
-font-size:28px;
-margin-top:15px;
-color:#ffcc00;
-text-shadow:0 0 10px yellow;
-}
-
-.vencedor{
-animation:brilho 1s infinite alternate;
-}
-
-@keyframes brilho{
-from{text-shadow:0 0 5px white;}
-to{text-shadow:0 0 25px orange;}
-}
-
-.rodape{
-position:fixed;
-bottom:0;
-width:100%;
-text-align:center;
-padding:8px;
-background:rgba(0,0,0,0.7);
-font-size:14px;
-}
-
-.rodape span{
-color:#ff9800;
-font-weight:bold;
-text-shadow:0 0 10px orange;
-}
-
-#ranking div{
-margin:5px 0;
-}
+.overlay{background:rgba(0,0,0,0.6);flex:1;padding:20px;}
+h1{margin-bottom:20px;text-shadow:0 0 15px orange;}
+input,button{padding:10px;margin:5px;border:none;border-radius:8px;}
+button{background:orange;color:black;font-weight:bold;cursor:pointer;transition:0.3s;}
+button:hover{transform:scale(1.05);}
+.lista-times{margin-top:15px;}
+.partida{margin-top:20px;font-size:22px;font-weight:bold;}
+.timer{font-size:28px;margin-top:15px;color:#ffcc00;text-shadow:0 0 10px yellow;}
+.vencedor{animation:brilho 1s infinite alternate;}
+@keyframes brilho{from{text-shadow:0 0 5px white;} to{text-shadow:0 0 25px orange;}}
+.rodape{position:fixed;bottom:0;width:100%;text-align:center;padding:8px;background:rgba(0,0,0,0.7);font-size:14px;}
+.rodape span{color:#ff9800;font-weight:bold;text-shadow:0 0 10px orange;}
+#ranking div{margin:5px 0;}
+.confete{position:fixed;width:10px;height:10px;background:orange;animation:queda 1s linear infinite;z-index:999;border-radius:50%;}
+@keyframes queda{0%{transform:translateY(0) rotate(0deg);}100%{transform:translateY(100vh) rotate(360deg);}}
 </style>
 </head>
-
 <body>
 
 <div class="overlay">
+<h1>🏐 Mix Play Web PRO</h1>
 
-<h1>🏐 Mix Play Web</h1>
+<!-- BOTÃO DE PAGAMENTO -->
+<div id="pagamento">
+<button id="payButton">Desbloquear App</button>
+<p>Após desbloquear, você poderá cadastrar times e gerar partidas.</p>
+</div>
 
 <!-- TELA DE CADASTRO -->
-<div id="cadastro">
+<div id="cadastro" style="display:none;">
 <input type="text" id="nomeTime" placeholder="Nome do Time">
 <button onclick="addTime()">Adicionar</button>
 <div class="lista-times" id="lista"></div>
@@ -117,7 +62,6 @@ margin:5px 0;
 <button onclick="vencedor(1)">Time 1 venceu</button>
 <button onclick="vencedor(2)">Time 2 venceu</button>
 <button onclick="voltar()">Voltar</button>
-
 <h3 style="margin-top:20px;">🏆 Ranking de Vitórias</h3>
 <div id="ranking"></div>
 </div>
@@ -128,12 +72,19 @@ margin:5px 0;
 Criado por <span>Murilo Pompeo</span>
 </footer>
 
+<!-- SONS -->
 <audio id="torcida" src="https://www.soundjay.com/human/cheering-01.mp3"></audio>
 <audio id="fim" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
 <audio id="musica" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
 
+<!-- Stripe -->
+<script src="https://js.stripe.com/v3/"></script>
+
 <script>
-// Dados do sistema
+// Bloqueio inicial
+let desbloqueado = false;
+
+// Dados
 let times=[];
 let vitorias={};
 let confrontos=[];
@@ -141,10 +92,29 @@ let atual=[];
 let tempo=900;
 let intervalo;
 
-// ADICIONAR TIME
+// BOTÃO DE PAGAMENTO COM STRIPE
+const stripe = Stripe("SUA_CHAVE_PUBLICA_DO_STRIPE");
+document.getElementById("payButton").addEventListener("click", () => {
+  fetch("/create-checkout-session", {method:"POST"})
+  .then(res => res.json())
+  .then(session => stripe.redirectToCheckout({ sessionId: session.id }))
+  .then(result => { if(result.error) alert(result.error.message); });
+});
+
+// Detecta retorno do Stripe
+if(new URLSearchParams(window.location.search).get("success")){
+  desbloqueado = true;
+  document.getElementById("pagamento").style.display="none";
+  document.getElementById("cadastro").style.display="block";
+  document.getElementById("musica").play();
+  alert("Pagamento confirmado! Você pode cadastrar times e gerar partidas.");
+}
+
+// Adicionar time
 function addTime(){
-let nome=document.getElementById("nomeTime").value;
-if(nome.trim()!=""){
+if(!desbloqueado){alert("Você precisa desbloquear o app primeiro!"); return;}
+let nome=document.getElementById("nomeTime").value.trim();
+if(nome!="" && !times.includes(nome)){
 times.push(nome);
 vitorias[nome]=0;
 document.getElementById("nomeTime").value="";
@@ -153,7 +123,7 @@ atualizarRanking();
 }
 }
 
-// MOSTRAR TIMES CADASTRADOS
+// Mostrar times
 function mostrarTimes(){
 let lista=document.getElementById("lista");
 lista.innerHTML="";
@@ -162,7 +132,7 @@ lista.innerHTML+=`<div>${t} <button onclick="remover(${i})">X</button></div>`;
 });
 }
 
-// REMOVER TIME
+// Remover time
 function remover(i){
 let nomeRemovido = times[i];
 if(!confirm("Deseja excluir o time " + nomeRemovido + "?")) return;
@@ -172,17 +142,16 @@ mostrarTimes();
 atualizarRanking();
 }
 
-// INICIAR PARTIDAS
+// Iniciar partidas
 function iniciar(){
 if(times.length<2){alert("Cadastre pelo menos 2 times"); return;}
 document.getElementById("cadastro").style.display="none";
 document.getElementById("partidas").style.display="block";
-document.getElementById("musica").play();
 gerarPartida();
 atualizarRanking();
 }
 
-// VOLTAR PARA CADASTRO
+// Voltar para cadastro
 function voltar(){
 document.getElementById("cadastro").style.display="block";
 document.getElementById("partidas").style.display="none";
@@ -190,18 +159,17 @@ clearInterval(intervalo);
 resetTimer();
 }
 
-// GERAR PARTIDA AUTOMÁTICA
+// Gerar partida
 function gerarPartida(){
 if(confrontos.length >= (times.length*(times.length-1))/2){
 confrontos=[];
 }
-let t1,t2,comb;
+let t1,t2;
 do{
 t1=Math.floor(Math.random()*times.length);
 t2=Math.floor(Math.random()*times.length);
 }while(t1==t2);
-
-comb=[times[t1],times[t2]].sort().join("-");
+let comb=[times[t1],times[t2]].sort().join("-");
 if(confrontos.includes(comb)){
 gerarPartida();
 return;
@@ -212,7 +180,7 @@ document.getElementById("jogo").innerHTML=`${atual[0]} VS ${atual[1]}`;
 resetTimer();
 }
 
-// REGISTRAR VENCEDOR
+// Vencedor
 function vencedor(num){
 clearInterval(intervalo);
 let nome=atual[num-1];
@@ -220,10 +188,11 @@ vitorias[nome]++;
 document.getElementById("torcida").play();
 document.getElementById("jogo").innerHTML=`🏆 <span class="vencedor">${nome} venceu!</span>`;
 atualizarRanking();
+showConfete();
 setTimeout(()=>{gerarPartida();},3000);
 }
 
-// CRONÔMETRO
+// Cronômetro
 function resetTimer(){
 tempo=900;
 updateTimer();
@@ -238,7 +207,6 @@ alert("Tempo esgotado!");
 }
 },1000);
 }
-
 function updateTimer(){
 let min=Math.floor(tempo/60);
 let seg=tempo%60;
@@ -246,7 +214,7 @@ document.getElementById("timer").innerText=
 (min<10?"0":"")+min+":"+(seg<10?"0":"")+seg;
 }
 
-// ATUALIZAR RANKING
+// Ranking
 function atualizarRanking(){
 let rankingDiv = document.getElementById("ranking");
 rankingDiv.innerHTML="";
@@ -256,10 +224,28 @@ rankingDiv.innerHTML+=`<div>${index+1}º - ${nome} (${pontos} vitórias)</div>`;
 });
 }
 
-// INICIALIZA LISTA
+// Confete
+function showConfete(){
+for(let i=0;i<30;i++){
+let c=document.createElement("div");
+c.classList.add("confete");
+c.style.left=Math.random()*100+"%";
+c.style.background=['#ff9800','#ffeb3b','#ff5722'][Math.floor(Math.random()*3)];
+document.body.appendChild(c);
+setTimeout(()=>{c.remove();},2000);
+}
+}
+
+// Inicializa
 mostrarTimes();
 atualizarRanking();
 
+// PWA Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js')
+    .then(()=>console.log('Service Worker registrado!'))
+    .catch(err=>console.log('Erro SW:',err));
+}
 </script>
 
 </body>
