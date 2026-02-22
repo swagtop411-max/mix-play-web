@@ -140,11 +140,12 @@ let confrontos=[];
 let atual=[];
 let tempo=900;
 let intervalo;
+let streakVencedor=0; // Contador de partidas consecutivas do vencedor
 
 // ADICIONAR TIME
 function addTime(){
 let nome=document.getElementById("nomeTime").value;
-if(nome.trim()!=""){
+if(nome.trim()!="" && !times.includes(nome)){
 times.push(nome);
 vitorias[nome]=0;
 document.getElementById("nomeTime").value="";
@@ -188,6 +189,7 @@ document.getElementById("cadastro").style.display="block";
 document.getElementById("partidas").style.display="none";
 clearInterval(intervalo);
 resetTimer();
+streakVencedor=0;
 }
 
 // GERAR PARTIDA AUTOMÁTICA
@@ -196,10 +198,17 @@ if(confrontos.length >= (times.length*(times.length-1))/2){
 confrontos=[];
 }
 let t1,t2,comb;
+
+if(streakVencedor>0){
+t1=atual[streakVencedor>=2?1:0]; // mantém vencedor se ainda não jogou 2 vezes
+t2=Math.floor(Math.random()*times.length);
+while(times[t2]==t1) t2=Math.floor(Math.random()*times.length);
+} else {
 do{
 t1=Math.floor(Math.random()*times.length);
 t2=Math.floor(Math.random()*times.length);
 }while(t1==t2);
+}
 
 comb=[times[t1],times[t2]].sort().join("-");
 if(confrontos.includes(comb)){
@@ -220,6 +229,13 @@ vitorias[nome]++;
 document.getElementById("torcida").play();
 document.getElementById("jogo").innerHTML=`🏆 <span class="vencedor">${nome} venceu!</span>`;
 atualizarRanking();
+
+// Atualiza streak
+streakVencedor = (streakVencedor>0 && atual[num-1]==atual[0])? streakVencedor+1 : 1;
+
+// Limita a 2 partidas consecutivas
+if(streakVencedor>2) streakVencedor=0;
+
 setTimeout(()=>{gerarPartida();},3000);
 }
 
