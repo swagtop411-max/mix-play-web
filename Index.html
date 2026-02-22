@@ -1,0 +1,162 @@
+<script>
+let teams=[]
+let queue=[]
+let current=[]
+let streak=0
+let lastWinner=null
+let matches=0
+let rankingData={}
+let historyData=[]
+let recentMatches=[]
+
+const STORAGE_KEY="mixplay_loopin_v2"
+
+// ===== ELEMENTOS =====
+const setupEl=document.getElementById("setup")
+const gameEl=document.getElementById("game")
+const teamInputEl=document.getElementById("teamInput")
+const teamListEl=document.getElementById("teamList")
+const t1El=document.getElementById("t1")
+const t2El=document.getElementById("t2")
+const streakEl=document.getElementById("streakEl")
+const rankingEl=document.getElementById("ranking")
+const historyEl=document.getElementById("history")
+const matchCountEl=document.getElementById("matchCount")
+
+function save(){
+localStorage.setItem(STORAGE_KEY,JSON.stringify({
+teams,queue,current,streak,lastWinner,matches,rankingData,historyData,recentMatches
+}))
+}
+
+function load(){
+let data=localStorage.getItem(STORAGE_KEY)
+if(data){
+let d=JSON.parse(data)
+teams=d.teams||[]
+queue=d.queue||[]
+current=d.current||[]
+streak=d.streak||0
+lastWinner=d.lastWinner
+matches=d.matches||0
+rankingData=d.rankingData||{}
+historyData=d.historyData||[]
+recentMatches=d.recentMatches||[]
+if(current.length){
+setupEl.style.display="none"
+gameEl.style.display="block"
+renderMatch()
+}
+}
+}
+
+function addTeam(){
+let name=teamInputEl.value.trim()
+if(!name||teams.includes(name)||teams.length>=20)return
+teams.push(name)
+rankingData[name]=0
+teamInputEl.value=""
+renderTeams()
+save()
+}
+
+function renderTeams(){
+teamListEl.innerHTML=""
+teams.forEach(t=>{
+teamListEl.innerHTML+=`<div class="team">${t}</div>`
+})
+}
+
+function start(){
+if(teams.length<3){alert("Mínimo 3 duplas");return}
+queue=[...teams]
+shuffle(queue)
+current=[queue.shift(),queue.shift()]
+streak=0
+matches=0
+historyData=[]
+recentMatches=[]
+setupEl.style.display="none"
+gameEl.style.display="block"
+renderMatch()
+save()
+}
+
+function renderMatch(){
+t1El.innerText=current[0]||""
+t2El.innerText=current[1]||""
+
+if(streak>0){
+streakEl.innerHTML="🔥 "+streak+" vitória(s) seguida(s)"
+}else{
+streakEl.innerHTML=""
+}
+
+matchCountEl.innerText="Total de partidas: "+matches
+
+rankingEl.innerHTML="<b>🏆 Ranking:</b><br>"+Object.entries(rankingData)
+.sort((a,b)=>b[1]-a[1])
+.map((r,i)=>{
+let medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":""
+return medal+" "+r[0]+" - "+r[1]+" pts"
+}).join("<br>")
+
+historyEl.innerHTML="<b>📜 Histórico:</b><br>"+historyData.slice(-10).reverse().join("<br>")
+
+save()
+}
+
+function win(index){
+matches++
+let winner=current[index]
+let loser=current[index===0?1:0]
+
+let points=3
+if(streak>=1) points=5
+if(streak>=2) points=7
+
+rankingData[winner]+=points
+historyData.push(`${winner} venceu ${loser} (+${points} pts)`)
+
+if(lastWinner===index){streak++}else{streak=1}
+lastWinner=index
+
+recentMatches.push(current.join(" vs "))
+if(recentMatches.length>5) recentMatches.shift()
+
+rotateQueue(winner,loser)
+renderMatch()
+}
+
+function rotateQueue(winner,loser){
+if(queue.length===0){
+queue=[...teams.filter(t=>t!==winner)]
+}
+
+if(streak>=2){
+queue.push(winner)
+current=[queue.shift(),queue.shift()]
+streak=0
+}else{
+queue.push(loser)
+let next=queue.find(t=>!recentMatches.includes(`${winner} vs ${t}`))
+if(!next) next=queue.shift()
+else queue.splice(queue.indexOf(next),1)
+current=[winner,next]
+}
+}
+
+function shuffle(array){
+for(let i=array.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1))
+[array[i],array[j]]=[array[j],array[i]]
+}
+}
+
+function reset(){
+localStorage.removeItem(STORAGE_KEY)
+location.reload()
+}
+
+load()
+</script>
