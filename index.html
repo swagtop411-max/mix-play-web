@@ -3,124 +3,264 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cadastro de Times - Rota77</title>
+<title>Mix Play Web</title>
 
 <style>
 body{
 margin:0;
-font-family:Arial;
-background:url('file_000000009aac71f5a38536be785d2478.png') no-repeat center center fixed;
-background-size:cover;
-color:white;
+font-family:Arial,Helvetica,sans-serif;
+background:#000;
+color:#fff;
 text-align:center;
 }
 
-.overlay{
-background:rgba(0,0,0,0.8);
-min-height:100vh;
-padding:20px;
+header{
+background:#111;
+padding:15px;
+font-size:22px;
+font-weight:bold;
+}
+
+.main-img{
+width:100%;
+max-height:350px;
+object-fit:cover;
+}
+
+.container{
+padding:15px;
 }
 
 input{
-padding:10px;
-border:none;
+padding:8px;
+margin:5px;
 border-radius:5px;
-width:70%;
+border:none;
 }
 
 button{
-padding:10px;
+padding:8px 15px;
+margin:5px;
 border:none;
 border-radius:5px;
-margin:5px;
-font-weight:bold;
 cursor:pointer;
+font-weight:bold;
 }
 
-.add{background:#00c853;color:white;}
-.go{background:#FFD600;color:black;}
-.delete{background:red;color:white;}
+.btn-add{background:#28a745;color:#fff;}
+.btn-match{background:#007bff;color:#fff;}
+.btn-win{background:#ffc107;color:#000;}
+.btn-del{background:#dc3545;color:#fff;}
+.btn-reset{background:#6c757d;color:#fff;}
 
-.team{
-background:rgba(255,255,255,0.1);
-margin:5px auto;
-padding:8px;
-border-radius:5px;
+.card{
+background:#111;
+margin:10px auto;
+padding:10px;
+border-radius:8px;
+max-width:500px;
+}
+
+.ranking-item{
 display:flex;
 justify-content:space-between;
-max-width:400px;
+padding:5px;
+border-bottom:1px solid #333;
 }
 </style>
 </head>
 
 <body>
 
-<div class="overlay">
+<header>Mix Play Web</header>
 
-<h1>🏐 Cadastro de Times</h1>
+<img src="file_000000009aac71f5a38536be785d2478.png" class="main-img">
 
-<input type="text" id="teamInput" placeholder="Nome do time">
-<button class="add" onclick="addTeam()">Cadastrar</button>
+<div class="container">
 
+<h3>Cadastrar Time</h3>
+<input type="text" id="teamName" placeholder="Nome do Time">
+<button class="btn-add" onclick="addTeam()">Adicionar</button>
+
+<h3>Times</h3>
 <div id="teamList"></div>
 
-<br>
-<button class="go" onclick="goToMatches()">Ir para Partidas</button>
+<h3>Partida Atual</h3>
+<div id="matchArea" class="card"></div>
+<button class="btn-match" onclick="generateMatch()">Gerar Partida</button>
+
+<h3>Cronômetro</h3>
+<div id="timer">00:00</div>
+<button onclick="startTimer()">Iniciar</button>
+<button onclick="stopTimer()">Parar</button>
+<button onclick="resetTimer()">Resetar</button>
+
+<h3>Ranking</h3>
+<div id="ranking"></div>
+<button class="btn-reset" onclick="resetAll()">Resetar Tudo</button>
 
 </div>
 
+<audio id="bgMusic" loop>
+<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_6c9a0a6d62.mp3?filename=sport-rock-trailer-110964.mp3">
+</audio>
+
 <script>
-
 let teams = JSON.parse(localStorage.getItem("teams")) || [];
+let wins = JSON.parse(localStorage.getItem("wins")) || {};
+let currentMatch = JSON.parse(localStorage.getItem("currentMatch")) || [];
+let winnerQueue = JSON.parse(localStorage.getItem("winnerQueue")) || null;
+let winStreak = JSON.parse(localStorage.getItem("winStreak")) || 0;
 
+/* -------- SALVAR -------- */
 function save(){
 localStorage.setItem("teams",JSON.stringify(teams));
+localStorage.setItem("wins",JSON.stringify(wins));
+localStorage.setItem("currentMatch",JSON.stringify(currentMatch));
+localStorage.setItem("winnerQueue",JSON.stringify(winnerQueue));
+localStorage.setItem("winStreak",JSON.stringify(winStreak));
 }
 
+/* -------- ADICIONAR TIME -------- */
 function addTeam(){
-let name=document.getElementById("teamInput").value.trim();
+let name = document.getElementById("teamName").value.trim();
 if(!name) return;
-if(teams.includes(name)) return alert("Time já cadastrado");
-
+if(teams.includes(name)) return alert("Time já existe");
 teams.push(name);
-document.getElementById("teamInput").value="";
+wins[name]=wins[name]||0;
+document.getElementById("teamName").value="";
 save();
 render();
 }
 
-function removeTeam(name){
-teams=teams.filter(t=>t!==name);
+/* -------- EXCLUIR TIME -------- */
+function deleteTeam(name){
+teams = teams.filter(t=>t!==name);
+delete wins[name];
 save();
 render();
 }
 
+/* -------- GERAR PARTIDA -------- */
+function generateMatch(){
+
+if(teams.length<2) return alert("Cadastre pelo menos 2 times");
+
+if(winnerQueue && winStreak===1){
+let others = teams.filter(t=>t!==winnerQueue);
+let opponent = others[Math.floor(Math.random()*others.length)];
+currentMatch=[winnerQueue,opponent];
+}else{
+let shuffled=[...teams].sort(()=>0.5-Math.random());
+currentMatch=[shuffled[0],shuffled[1]];
+winnerQueue=null;
+winStreak=0;
+}
+
+save();
+render();
+}
+
+/* -------- DECLARAR VENCEDOR -------- */
+function declareWinner(team){
+
+wins[team]++;
+
+if(winnerQueue===team){
+winStreak++;
+}else{
+winnerQueue=team;
+winStreak=1;
+}
+
+/* REGRA MATEMÁTICA PERFEITA */
+if(winStreak>=2){
+winnerQueue=null;
+winStreak=0;
+}
+
+currentMatch=[];
+save();
+render();
+}
+
+/* -------- RENDER -------- */
 function render(){
-let list=document.getElementById("teamList");
-list.innerHTML="";
-teams.forEach(team=>{
-let div=document.createElement("div");
-div.className="team";
 
-let span=document.createElement("span");
-span.innerText=team;
-
-let btn=document.createElement("button");
-btn.innerText="Excluir";
-btn.className="delete";
-btn.onclick=()=>removeTeam(team);
-
-div.appendChild(span);
-div.appendChild(btn);
-list.appendChild(div);
+/* Lista */
+let list="";
+teams.forEach(t=>{
+list+=`
+<div class="card">
+${t}
+<button class="btn-del" onclick="deleteTeam('${t}')">X</button>
+</div>`;
 });
+document.getElementById("teamList").innerHTML=list;
+
+/* Partida */
+if(currentMatch.length===2){
+document.getElementById("matchArea").innerHTML=
+`
+<h4>${currentMatch[0]} VS ${currentMatch[1]}</h4>
+<button class="btn-win" onclick="declareWinner('${currentMatch[0]}')">${currentMatch[0]} venceu</button>
+<button class="btn-win" onclick="declareWinner('${currentMatch[1]}')">${currentMatch[1]} venceu</button>
+`;
+}else{
+document.getElementById("matchArea").innerHTML="Nenhuma partida ativa";
 }
 
-function goToMatches(){
-window.location.href="partidas.html";
+/* Ranking */
+let rankingHTML="";
+let sorted=Object.entries(wins).sort((a,b)=>b[1]-a[1]);
+sorted.forEach(r=>{
+rankingHTML+=`
+<div class="ranking-item">
+<span>${r[0]}</span>
+<span>${r[1]} vitórias</span>
+</div>`;
+});
+document.getElementById("ranking").innerHTML=rankingHTML;
+}
+
+/* -------- CRONÔMETRO -------- */
+let timerInterval;
+let seconds=0;
+
+function startTimer(){
+document.getElementById("bgMusic").play();
+timerInterval=setInterval(()=>{
+seconds++;
+let min=Math.floor(seconds/60);
+let sec=seconds%60;
+document.getElementById("timer").innerText=
+(min<10?"0":"")+min+":"+(sec<10?"0":"")+sec;
+},1000);
+}
+
+function stopTimer(){
+clearInterval(timerInterval);
+}
+
+function resetTimer(){
+seconds=0;
+document.getElementById("timer").innerText="00:00";
+}
+
+/* -------- RESET GERAL -------- */
+function resetAll(){
+if(confirm("Tem certeza?")){
+localStorage.clear();
+teams=[];
+wins={};
+currentMatch=[];
+winnerQueue=null;
+winStreak=0;
+render();
+}
 }
 
 render();
-
 </script>
 
 </body>
