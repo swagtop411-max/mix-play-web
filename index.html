@@ -26,7 +26,7 @@ padding:20px;
 .container{
 width:100%;
 max-width:500px;
-background:rgba(0,0,0,0.85);
+background:rgba(0,0,0,0.88);
 padding:25px;
 border-radius:20px;
 text-align:center;
@@ -87,7 +87,6 @@ font-size:32px;
 font-weight:bold;
 color:#00e676;
 margin-bottom:15px;
-letter-spacing:2px;
 }
 
 .scoreboard{
@@ -110,7 +109,6 @@ text-align:center;
 
 .vs{
 color:#ffb300;
-font-size:18px;
 }
 
 .ranking-item{
@@ -142,7 +140,7 @@ Após desbloquear, você poderá cadastrar times e gerar partidas.
 <div class="footer">Criado por Murilo Pompeo</div>
 </div>
 
-<!-- PAGINA CADASTRO -->
+<!-- CADASTRO -->
 <div id="paginaCadastro" class="hidden">
 <h1>Cadastro de Times</h1>
 
@@ -155,7 +153,7 @@ Após desbloquear, você poderá cadastrar times e gerar partidas.
 <button class="btn-red" onclick="voltarInicio()">Voltar</button>
 </div>
 
-<!-- PAGINA PARTIDAS -->
+<!-- PARTIDAS -->
 <div id="paginaPartidas" class="hidden">
 <h1>Partidas</h1>
 
@@ -183,10 +181,11 @@ Após desbloquear, você poderá cadastrar times e gerar partidas.
 
 let times = JSON.parse(localStorage.getItem("times")) || [];
 let ranking = JSON.parse(localStorage.getItem("ranking")) || {};
+
 let fila = [];
 let atual = [];
-let vitoriasSeguidas = 0;
 let ultimoVencedor = null;
+let vitoriasSeguidas = 0;
 
 let tempo=0;
 let intervalo=null;
@@ -242,6 +241,7 @@ embaralhar(fila);
 gerarPartida();
 paginaCadastro.classList.add("hidden");
 paginaPartidas.classList.remove("hidden");
+atualizarRanking();
 }
 
 function voltarCadastro(){
@@ -250,39 +250,48 @@ paginaCadastro.classList.remove("hidden");
 }
 
 function gerarPartida(){
-if(fila.length<2) fila=[...times];
+
+if(fila.length<2){
+fila=[...times];
+embaralhar(fila);
+}
+
 atual=[fila.shift(),fila.shift()];
+
 time1Nome.innerText=atual[0];
 time2Nome.innerText=atual[1];
+
 resetarCronometro();
 }
 
 function definirVencedor(index){
 
-const vencedor=atual[index];
+const vencedor = atual[index];
 ranking[vencedor]++;
-salvar();
 
-if(ultimoVencedor===vencedor){
+if(ultimoVencedor === vencedor){
 vitoriasSeguidas++;
 }else{
-vitoriasSeguidas=1;
+vitoriasSeguidas = 1;
 }
 
-if(vitoriasSeguidas===1){
+if(vitoriasSeguidas === 1){
+// joga novamente
 fila.unshift(vencedor);
-ultimoVencedor=vencedor;
-}else{
-vitoriasSeguidas=0;
-ultimoVencedor=null;
+ultimoVencedor = vencedor;
+}
+else if(vitoriasSeguidas === 2){
+// obrigatoriamente sai
+vitoriasSeguidas = 0;
+ultimoVencedor = null;
 }
 
+salvar();
 atualizarRanking();
 gerarPartida();
 }
 
 function atualizarRanking(){
-rankingDiv="";
 ranking.innerHTML="";
 Object.entries(ranking)
 .sort((a,b)=>b[1]-a[1])
@@ -324,5 +333,6 @@ renderizarTimes();
 atualizarRanking();
 
 </script>
+
 </body>
 </html>
