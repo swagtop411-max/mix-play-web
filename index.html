@@ -3,25 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rota77 - Gerador de Partidas</title>
+<title>Rota77 - Sistema de Jogos</title>
 
 <style>
-body{
+*{
 margin:0;
-font-family:Arial, sans-serif;
+padding:0;
+box-sizing:border-box;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
 background:url('file_000000009aac71f5a38536be785d2478.png') no-repeat center center fixed;
 background-size:cover;
-color:#fff;
+color:white;
+min-height:100vh;
 }
 
 .overlay{
-background:rgba(0,0,0,0.75);
+background:rgba(0,0,0,0.7);
 min-height:100vh;
 padding:20px;
 }
 
-h1,h2{
+h1{
 text-align:center;
+margin-bottom:20px;
+}
+
+.page{
+display:none;
+}
+
+.active{
+display:block;
+}
+
+input{
+padding:10px;
+width:70%;
+border-radius:8px;
+border:none;
+margin-right:5px;
 }
 
 button{
@@ -32,127 +55,108 @@ cursor:pointer;
 font-weight:bold;
 }
 
-.primary{background:#ffcc00;color:#000;}
-.danger{background:#ff4444;color:#fff;}
-.success{background:#00c851;color:#fff;}
-.info{background:#33b5e5;color:#fff;}
-
-input{
-padding:8px;
-border-radius:6px;
-border:none;
-width:70%;
+.add-btn{
+background:#00ff88;
 }
 
-.team-box{
-display:flex;
-justify-content:space-between;
-align-items:center;
+.remove-btn{
+background:#ff4444;
+font-size:12px;
+padding:5px 8px;
+}
+
+.start-btn{
+background:#ffaa00;
+margin-top:20px;
+width:100%;
+}
+
+.game-box{
 background:rgba(255,255,255,0.1);
-padding:8px;
-margin:5px 0;
-border-radius:6px;
-}
-
-.page{display:none;}
-.active{display:block;}
-
-.match-box{
+padding:15px;
+border-radius:12px;
+margin-top:20px;
 text-align:center;
-font-size:20px;
-margin:20px 0;
 }
 
-.vs{
-font-size:28px;
-font-weight:bold;
-margin:10px 0;
+.victory-btn{
+background:#00ccff;
+width:45%;
+margin:5px;
 }
 
-.timer{
-font-size:26px;
-font-weight:bold;
-margin:10px 0;
+.back-btn{
+background:#666;
+margin-top:20px;
 }
 
 .ranking{
 margin-top:20px;
-background:rgba(255,255,255,0.1);
-padding:10px;
-border-radius:8px;
 }
 
-.ranking table{
-width:100%;
-text-align:center;
+.ranking-item{
+display:flex;
+justify-content:space-between;
+padding:5px 0;
+border-bottom:1px solid rgba(255,255,255,0.2);
 }
 
+.timer{
+font-size:24px;
+margin-top:10px;
+}
 </style>
 </head>
 
 <body>
 <div class="overlay">
 
-<!-- PAGINA CADASTRO -->
-<div id="pageCadastro" class="page active">
+<!-- PAGINA 1 -->
+<div id="cadastro" class="page active">
 <h1>Cadastro de Times</h1>
 
 <input type="text" id="teamInput" placeholder="Nome do time">
-<button class="primary" onclick="addTeam()">Adicionar</button>
+<button class="add-btn" onclick="addTeam()">Adicionar</button>
 
 <div id="teamList"></div>
 
-<br>
-<button class="success" onclick="startTournament()">Gerar Partidas</button>
+<button class="start-btn" onclick="goToGame()">Gerar Partidas</button>
 </div>
 
-<!-- PAGINA PARTIDAS -->
-<div id="pagePartidas" class="page">
+<!-- PAGINA 2 -->
+<div id="partidas" class="page">
 <h1>Partidas</h1>
 
-<div class="match-box">
-<div id="team1"></div>
-<div class="vs">VS</div>
-<div id="team2"></div>
+<div class="game-box">
+<h2 id="matchDisplay">Aguardando...</h2>
+
+<div>
+<button class="victory-btn" onclick="declareWinner(1)">Vitória Time 1</button>
+<button class="victory-btn" onclick="declareWinner(2)">Vitória Time 2</button>
 </div>
 
 <div class="timer" id="timer">00:00</div>
-
-<button class="success" onclick="setWinner(1)">Time 1 venceu</button>
-<button class="info" onclick="setWinner(2)">Time 2 venceu</button>
-
-<br><br>
-<button class="primary" onclick="backToCadastro()">Voltar</button>
+</div>
 
 <div class="ranking">
 <h2>Ranking</h2>
-<table border="1">
-<thead>
-<tr>
-<th>Time</th>
-<th>Pontos</th>
-<th>Vitórias</th>
-<th>Derrotas</th>
-<th>Saldo</th>
-</tr>
-</thead>
-<tbody id="rankingTable"></tbody>
-</table>
+<div id="rankingList"></div>
 </div>
 
+<button class="back-btn" onclick="backToRegister()">Voltar</button>
 </div>
+
 </div>
 
 <script>
-
 let teams = JSON.parse(localStorage.getItem("teams")) || [];
 let stats = JSON.parse(localStorage.getItem("stats")) || {};
+let queue = [];
 let currentMatch = [];
 let winnerStreak = 0;
-let lastWinner = null;
-
-let timerInterval;
+let currentWinner = null;
 let seconds = 0;
+let timerInterval = null;
 
 function saveData(){
 localStorage.setItem("teams", JSON.stringify(teams));
@@ -162,17 +166,17 @@ localStorage.setItem("stats", JSON.stringify(stats));
 function addTeam(){
 let input = document.getElementById("teamInput");
 let name = input.value.trim();
-if(name && !teams.includes(name)){
+if(!name) return;
+
 teams.push(name);
-stats[name] = {points:0,wins:0,losses:0,saldo:0};
+stats[name] = stats[name] || {wins:0, losses:0, saldo:0};
 input.value="";
 saveData();
 renderTeams();
 }
-}
 
 function removeTeam(name){
-teams = teams.filter(t=>t!==name);
+teams = teams.filter(t => t!==name);
 delete stats[name];
 saveData();
 renderTeams();
@@ -183,114 +187,108 @@ let list = document.getElementById("teamList");
 list.innerHTML="";
 teams.forEach(team=>{
 list.innerHTML+=`
-<div class="team-box">
+<div style="margin-top:10px;">
 ${team}
-<button class="danger" onclick="removeTeam('${team}')">X</button>
+<button class="remove-btn" onclick="removeTeam('${team}')">X</button>
+</div>`;
+});
+}
+renderTeams();
+
+function goToGame(){
+if(teams.length<2) return alert("Cadastre ao menos 2 times");
+queue = [...teams];
+shuffle(queue);
+nextMatch();
+document.getElementById("cadastro").classList.remove("active");
+document.getElementById("partidas").classList.add("active");
+}
+
+function backToRegister(){
+document.getElementById("partidas").classList.remove("active");
+document.getElementById("cadastro").classList.add("active");
+}
+
+function shuffle(array){
+for(let i=array.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1));
+[array[i],array[j]]=[array[j],array[i]];
+}
+}
+
+function nextMatch(){
+if(queue.length<2){
+queue=[...teams];
+shuffle(queue);
+}
+
+currentMatch=[queue.shift(), queue.shift()];
+document.getElementById("matchDisplay").innerText =
+currentMatch[0]+" VS "+currentMatch[1];
+
+resetTimer();
+}
+
+function declareWinner(teamNumber){
+if(!currentMatch.length) return;
+
+let winner = currentMatch[teamNumber-1];
+let loser = currentMatch[teamNumber===1?1:0];
+
+stats[winner].wins++;
+stats[winner].saldo++;
+stats[loser].losses++;
+stats[loser].saldo--;
+
+if(currentWinner===winner){
+winnerStreak++;
+}else{
+winnerStreak=1;
+currentWinner=winner;
+}
+
+if(winnerStreak===2){
+winnerStreak=0;
+currentWinner=null;
+queue.push(loser);
+}else{
+queue.unshift(winner);
+queue.push(loser);
+}
+
+saveData();
+renderRanking();
+nextMatch();
+}
+
+function renderRanking(){
+let rankingDiv=document.getElementById("rankingList");
+rankingDiv.innerHTML="";
+
+let sorted=[...teams].sort((a,b)=>stats[b].saldo - stats[a].saldo);
+
+sorted.forEach(team=>{
+rankingDiv.innerHTML+=`
+<div class="ranking-item">
+<span>${team}</span>
+<span>Saldo: ${stats[team].saldo}</span>
 </div>`;
 });
 }
 
-function startTournament(){
-if(teams.length<2){
-alert("Cadastre pelo menos 2 times");
-return;
-}
-showPage("pagePartidas");
-generateMatch();
-}
-
-function generateMatch(){
-if(teams.length<2) return;
-
-let t1,t2;
-
-if(winnerStreak===1 && lastWinner){
-t1 = lastWinner;
-let others = teams.filter(t=>t!==t1);
-t2 = others[Math.floor(Math.random()*others.length)];
-}else{
-let shuffled = [...teams].sort(()=>0.5-Math.random());
-t1 = shuffled[0];
-t2 = shuffled[1];
-winnerStreak=0;
-}
-
-currentMatch=[t1,t2];
-document.getElementById("team1").innerText=t1;
-document.getElementById("team2").innerText=t2;
-
-startTimer();
-updateRanking();
-}
-
-function setWinner(position){
-
-let winner = currentMatch[position-1];
-let loser = currentMatch[position===1?1:0];
-
-stats[winner].points+=3;
-stats[winner].wins+=1;
-stats[winner].saldo+=1;
-
-stats[loser].losses+=1;
-stats[loser].saldo-=1;
-
-if(lastWinner===winner){
-winnerStreak++;
-}else{
-winnerStreak=1;
-}
-
-if(winnerStreak>=2){
-lastWinner=null;
-winnerStreak=0;
-}else{
-lastWinner=winner;
-}
-
-saveData();
-generateMatch();
-}
-
-function updateRanking(){
-let table=document.getElementById("rankingTable");
-table.innerHTML="";
-let sorted = Object.keys(stats).sort((a,b)=>stats[b].points-stats[a].points);
-sorted.forEach(team=>{
-table.innerHTML+=`
-<tr>
-<td>${team}</td>
-<td>${stats[team].points}</td>
-<td>${stats[team].wins}</td>
-<td>${stats[team].losses}</td>
-<td>${stats[team].saldo}</td>
-</tr>`;
-});
-}
-
-function showPage(id){
-document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-document.getElementById(id).classList.add("active");
-}
-
-function backToCadastro(){
-showPage("pageCadastro");
-}
-
-function startTimer(){
+function resetTimer(){
 clearInterval(timerInterval);
 seconds=0;
 timerInterval=setInterval(()=>{
 seconds++;
-let min=Math.floor(seconds/60).toString().padStart(2,"0");
-let sec=(seconds%60).toString().padStart(2,"0");
-document.getElementById("timer").innerText=`${min}:${sec}`;
+let min=Math.floor(seconds/60);
+let sec=seconds%60;
+document.getElementById("timer").innerText=
+String(min).padStart(2,"0")+":"+String(sec).padStart(2,"0");
 },1000);
 }
 
-renderTeams();
-updateRanking();
-
+renderRanking();
 </script>
 
 </body>
