@@ -1,1 +1,201 @@
 
+<script>
+
+let times = [];
+let vitorias = {};
+let fila = [];
+let atual = [];
+let tempo = 900;
+let intervalo = null;
+let vencedorAtual = null;
+let streak = 0;
+
+const STORAGE_KEY = "mixplay_times";
+
+// ===== STORAGE =====
+function salvar(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    times: times,
+    vitorias: vitorias
+  }));
+}
+
+function carregar(){
+  let data = localStorage.getItem(STORAGE_KEY);
+  if(data){
+    try{
+      let obj = JSON.parse(data);
+      times = obj.times || [];
+      vitorias = obj.vitorias || {};
+    }catch(e){
+      times = [];
+      vitorias = {};
+    }
+  }
+}
+
+// ===== EMBARALHAR =====
+function embaralhar(array){
+  for(let i=array.length-1;i>0;i--){
+    let j=Math.floor(Math.random()*(i+1));
+    let temp=array[i];
+    array[i]=array[j];
+    array[j]=temp;
+  }
+}
+
+// ===== GERAR TODOS CONTRA TODOS =====
+function gerarFila(){
+  fila=[];
+  for(let i=0;i<times.length;i++){
+    for(let j=i+1;j<times.length;j++){
+      fila.push([times[i],times[j]]);
+    }
+  }
+  embaralhar(fila);
+}
+
+// ===== CADASTRO =====
+function addTime(){
+  let nome=document.getElementById("nomeTime").value.trim();
+  if(nome!=="" && !times.includes(nome)){
+    times.push(nome);
+    vitorias[nome]=0;
+    document.getElementById("nomeTime").value="";
+    mostrarTimes();
+    atualizarRanking();
+    salvar();
+  }
+}
+
+function mostrarTimes(){
+  let lista=document.getElementById("lista");
+  lista.innerHTML="";
+  for(let i=0;i<times.length;i++){
+    lista.innerHTML+="<div>"+times[i]+" <button onclick='remover("+i+")'>X</button></div>";
+  }
+}
+
+function remover(i){
+  let nome=times[i];
+  times.splice(i,1);
+  delete vitorias[nome];
+  mostrarTimes();
+  atualizarRanking();
+  salvar();
+}
+
+// ===== INICIAR =====
+function iniciar(){
+  if(times.length<2){
+    alert("Cadastre pelo menos 2 times");
+    return;
+  }
+  gerarFila();
+  document.getElementById("cadastro").style.display="none";
+  document.getElementById("partidas").style.display="block";
+  gerarPartida();
+}
+
+// ===== GERAR PARTIDA =====
+function gerarPartida(){
+
+  if(fila.length===0){
+    gerarFila();
+  }
+
+  if(streak>=2){
+    vencedorAtual=null;
+    streak=0;
+  }
+
+  let proxima=null;
+
+  if(vencedorAtual){
+    for(let i=0;i<fila.length;i++){
+      if(fila[i][0]===vencedorAtual || fila[i][1]===vencedorAtual){
+        proxima=fila.splice(i,1)[0];
+        break;
+      }
+    }
+  }
+
+  if(!proxima){
+    proxima=fila.shift();
+  }
+
+  atual=proxima;
+
+  document.getElementById("jogo").innerHTML=
+    atual[0]+" VS "+atual[1];
+
+  resetTimer();
+}
+
+// ===== VENCEDOR =====
+function vencedor(num){
+
+  clearInterval(intervalo);
+
+  let nome=atual[num-1];
+  if(!nome) return;
+
+  vitorias[nome]++;
+  atualizarRanking();
+  salvar();
+
+  document.getElementById("jogo").innerHTML=
+    "🏆 <span class='vencedor'>"+nome+" venceu!</span>";
+
+  if(vencedorAtual===nome){
+    streak++;
+  }else{
+    vencedorAtual=nome;
+    streak=1;
+  }
+
+  setTimeout(function(){
+    gerarPartida();
+  },2000);
+}
+
+// ===== TIMER =====
+function resetTimer(){
+  tempo=900;
+  updateTimer();
+  clearInterval(intervalo);
+  intervalo=setInterval(function(){
+    tempo--;
+    updateTimer();
+    if(tempo<=0){
+      clearInterval(intervalo);
+      alert("Tempo esgotado!");
+    }
+  },1000);
+}
+
+function updateTimer(){
+  let min=Math.floor(tempo/60);
+  let seg=tempo%60;
+  document.getElementById("timer").innerText=
+    (min<10?"0":"")+min+":"+(seg<10?"0":"")+seg;
+}
+
+// ===== RANKING =====
+function atualizarRanking(){
+  let ranking=document.getElementById("ranking");
+  ranking.innerHTML="";
+  let ordenado=Object.entries(vitorias).sort(function(a,b){
+    return b[1]-a[1];
+  });
+  for(let i=0;i<ordenado.length;i++){
+    ranking.innerHTML+="<div>"+(i+1)+"º - "+ordenado[i][0]+" ("+ordenado[i][1]+" vitórias)</div>";
+  }
+}
+
+// ===== INIT =====
+carregar();
+mostrarTimes();
+atualizarRanking();
+
+</script>
