@@ -3,115 +3,53 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rota77 - Sistema de Jogos</title>
+<title>Rota77 - Sistema Oficial</title>
 
 <style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial, Helvetica, sans-serif;
-}
-
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial;}
 body{
 background:url('file_000000009aac71f5a38536be785d2478.png') no-repeat center center fixed;
 background-size:cover;
 color:white;
 min-height:100vh;
 }
-
 .overlay{
-background:rgba(0,0,0,0.7);
+background:rgba(0,0,0,0.75);
 min-height:100vh;
 padding:20px;
 }
-
-h1{
-text-align:center;
-margin-bottom:20px;
-}
-
-.page{
-display:none;
-}
-
-.active{
-display:block;
-}
-
-input{
-padding:10px;
-width:70%;
-border-radius:8px;
-border:none;
-margin-right:5px;
-}
-
-button{
-padding:10px 15px;
-border:none;
-border-radius:8px;
-cursor:pointer;
-font-weight:bold;
-}
-
-.add-btn{
-background:#00ff88;
-}
-
-.remove-btn{
-background:#ff4444;
-font-size:12px;
-padding:5px 8px;
-}
-
-.start-btn{
-background:#ffaa00;
-margin-top:20px;
-width:100%;
-}
-
+.page{display:none;}
+.active{display:block;}
+h1{text-align:center;margin-bottom:20px;}
+input{padding:10px;width:70%;border-radius:8px;border:none;}
+button{padding:10px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;}
+.add-btn{background:#00ff88;}
+.remove-btn{background:#ff3333;padding:4px 8px;font-size:12px;}
+.start-btn{background:#ffaa00;width:100%;margin-top:15px;}
+.victory-btn{background:#00ccff;width:45%;margin:5px;}
+.back-btn{background:#777;margin-top:20px;}
 .game-box{
 background:rgba(255,255,255,0.1);
 padding:15px;
 border-radius:12px;
-margin-top:20px;
 text-align:center;
-}
-
-.victory-btn{
-background:#00ccff;
-width:45%;
-margin:5px;
-}
-
-.back-btn{
-background:#666;
 margin-top:20px;
 }
-
-.ranking{
-margin-top:20px;
-}
-
+.ranking{margin-top:20px;}
 .ranking-item{
 display:flex;
 justify-content:space-between;
-padding:5px 0;
 border-bottom:1px solid rgba(255,255,255,0.2);
+padding:5px 0;
 }
-
-.timer{
-font-size:24px;
-margin-top:10px;
-}
+.timer{font-size:22px;margin-top:10px;}
 </style>
 </head>
 
 <body>
 <div class="overlay">
 
-<!-- PAGINA 1 -->
+<!-- CADASTRO -->
 <div id="cadastro" class="page active">
 <h1>Cadastro de Times</h1>
 
@@ -120,20 +58,18 @@ margin-top:10px;
 
 <div id="teamList"></div>
 
-<button class="start-btn" onclick="goToGame()">Gerar Partidas</button>
+<button class="start-btn" onclick="goToGame()">Ir para Partidas</button>
 </div>
 
-<!-- PAGINA 2 -->
+<!-- PARTIDAS -->
 <div id="partidas" class="page">
 <h1>Partidas</h1>
 
 <div class="game-box">
 <h2 id="matchDisplay">Aguardando...</h2>
 
-<div>
-<button class="victory-btn" onclick="declareWinner(1)">Vitória Time 1</button>
-<button class="victory-btn" onclick="declareWinner(2)">Vitória Time 2</button>
-</div>
+<button class="victory-btn" onclick="declareWinner(0)">Vitória Time 1</button>
+<button class="victory-btn" onclick="declareWinner(1)">Vitória Time 2</button>
 
 <div class="timer" id="timer">00:00</div>
 </div>
@@ -153,12 +89,12 @@ let teams = JSON.parse(localStorage.getItem("teams")) || [];
 let stats = JSON.parse(localStorage.getItem("stats")) || {};
 let queue = [];
 let currentMatch = [];
-let winnerStreak = 0;
-let currentWinner = null;
+let consecutiveWins = 0;
+let lastWinner = null;
+let timerInterval;
 let seconds = 0;
-let timerInterval = null;
 
-function saveData(){
+function save(){
 localStorage.setItem("teams", JSON.stringify(teams));
 localStorage.setItem("stats", JSON.stringify(stats));
 }
@@ -171,33 +107,34 @@ if(!name) return;
 teams.push(name);
 stats[name] = stats[name] || {wins:0, losses:0, saldo:0};
 input.value="";
-saveData();
+save();
 renderTeams();
+renderRanking();
 }
 
 function removeTeam(name){
-teams = teams.filter(t => t!==name);
+teams = teams.filter(t=>t!==name);
 delete stats[name];
-saveData();
+save();
 renderTeams();
+renderRanking();
 }
 
 function renderTeams(){
-let list = document.getElementById("teamList");
+let list=document.getElementById("teamList");
 list.innerHTML="";
-teams.forEach(team=>{
+teams.forEach(t=>{
 list.innerHTML+=`
-<div style="margin-top:10px;">
-${team}
-<button class="remove-btn" onclick="removeTeam('${team}')">X</button>
+<div style="margin-top:8px;">
+${t}
+<button class="remove-btn" onclick="removeTeam('${t}')">X</button>
 </div>`;
 });
 }
-renderTeams();
 
 function goToGame(){
-if(teams.length<2) return alert("Cadastre ao menos 2 times");
-queue = [...teams];
+if(teams.length<2) return alert("Cadastre pelo menos 2 times");
+queue=[...teams];
 shuffle(queue);
 nextMatch();
 document.getElementById("cadastro").classList.remove("active");
@@ -209,10 +146,10 @@ document.getElementById("partidas").classList.remove("active");
 document.getElementById("cadastro").classList.add("active");
 }
 
-function shuffle(array){
-for(let i=array.length-1;i>0;i--){
+function shuffle(arr){
+for(let i=arr.length-1;i>0;i--){
 let j=Math.floor(Math.random()*(i+1));
-[array[i],array[j]]=[array[j],array[i]];
+[arr[i],arr[j]]=[arr[j],arr[i]];
 }
 }
 
@@ -223,55 +160,60 @@ shuffle(queue);
 }
 
 currentMatch=[queue.shift(), queue.shift()];
-document.getElementById("matchDisplay").innerText =
+document.getElementById("matchDisplay").innerText=
 currentMatch[0]+" VS "+currentMatch[1];
-
 resetTimer();
 }
 
-function declareWinner(teamNumber){
+function declareWinner(index){
 if(!currentMatch.length) return;
 
-let winner = currentMatch[teamNumber-1];
-let loser = currentMatch[teamNumber===1?1:0];
+let winner=currentMatch[index];
+let loser=currentMatch[index===0?1:0];
 
 stats[winner].wins++;
 stats[winner].saldo++;
 stats[loser].losses++;
 stats[loser].saldo--;
 
-if(currentWinner===winner){
-winnerStreak++;
+if(lastWinner===winner){
+consecutiveWins++;
 }else{
-winnerStreak=1;
-currentWinner=winner;
+consecutiveWins=1;
+lastWinner=winner;
 }
 
-if(winnerStreak===2){
-winnerStreak=0;
-currentWinner=null;
+/*
+REGRA CORRETA:
+
+Se venceu 2 seguidas → sai
+Se perdeu → sai automaticamente
+*/
+
+if(consecutiveWins===2){
+consecutiveWins=0;
+lastWinner=null;
 queue.push(loser);
 }else{
 queue.unshift(winner);
 queue.push(loser);
 }
 
-saveData();
+save();
 renderRanking();
 nextMatch();
 }
 
 function renderRanking(){
-let rankingDiv=document.getElementById("rankingList");
-rankingDiv.innerHTML="";
-
+let div=document.getElementById("rankingList");
+div.innerHTML="";
 let sorted=[...teams].sort((a,b)=>stats[b].saldo - stats[a].saldo);
 
-sorted.forEach(team=>{
-rankingDiv.innerHTML+=`
+sorted.forEach(t=>{
+div.innerHTML+=`
 <div class="ranking-item">
-<span>${team}</span>
-<span>Saldo: ${stats[team].saldo}</span>
+<span>${t}</span>
+<span>Saldo: ${stats[t].saldo}</span>
 </div>`;
 });
 }
@@ -281,13 +223,14 @@ clearInterval(timerInterval);
 seconds=0;
 timerInterval=setInterval(()=>{
 seconds++;
-let min=Math.floor(seconds/60);
-let sec=seconds%60;
+let m=Math.floor(seconds/60);
+let s=seconds%60;
 document.getElementById("timer").innerText=
-String(min).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
 },1000);
 }
 
+renderTeams();
 renderRanking();
 </script>
 
