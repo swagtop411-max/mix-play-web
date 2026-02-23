@@ -1,185 +1,153 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Partidas - Rota77</title>
+<title>Partidas</title>
 
 <style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial;}
 body{
-margin:0;
-font-family:Arial;
-background:url('file_000000009aac71f5a38536be785d2478.png') no-repeat center center fixed;
-background-size:cover;
-color:white;
-text-align:center;
+    min-height:100vh;
+    background:url("file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
+    background-size:cover;
+    color:#fff;
 }
-
 .overlay{
-background:rgba(0,0,0,0.85);
-min-height:100vh;
-padding:20px;
+    min-height:100vh;
+    background:rgba(0,0,0,0.75);
+    padding:20px;
 }
-
+.container{max-width:600px;margin:auto;text-align:center;}
+.partida{
+    background:#1c1c1c;
+    padding:10px;
+    border-radius:6px;
+    margin-top:15px;
+}
 button{
-padding:10px;
-border:none;
-border-radius:5px;
-margin:5px;
-font-weight:bold;
-cursor:pointer;
+    width:100%;
+    padding:10px;
+    margin:5px 0;
+    border:none;
+    border-radius:6px;
+    font-weight:bold;
 }
-
-.win{background:#FFD600;color:black;}
-.back{background:#00c853;color:white;}
-
-#match{
-font-size:24px;
-margin:20px 0;
-}
-
-#winner{
-font-size:18px;
-color:#FFD600;
-margin:10px 0;
-}
-
-#timer{
-font-size:20px;
-margin:10px 0;
-}
-
-ul{
-list-style:none;
-padding:0;
-}
+.vencedor{background:#2962ff;color:#fff;}
+.voltar{background:#c62828;color:#fff;}
+.cronometro{font-size:24px;margin-top:10px;}
+.ranking{margin-top:20px;text-align:left;}
 </style>
 </head>
 
 <body>
-
 <div class="overlay">
+<div class="container">
 
-<h1>🏐 Rei da Quadra</h1>
+<h1>Partidas</h1>
 
-<div id="match"></div>
-<div id="winner"></div>
-<div id="timer">00:00</div>
+<div class="partida" id="areaPartida"></div>
 
-<button class="win" onclick="setWinner(0)">Vitória Time 1</button>
-<button class="win" onclick="setWinner(1)">Vitória Time 2</button>
+<button class="vencedor" onclick="definirVencedor(1)">Time 1 venceu</button>
+<button class="vencedor" onclick="definirVencedor(2)">Time 2 venceu</button>
 
-<h2>Ranking</h2>
-<ul id="ranking"></ul>
+<div class="cronometro" id="cronometro">00:00</div>
 
-<br>
-<button class="back" onclick="goBack()">Voltar</button>
+<div class="ranking">
+<h3>Ranking</h3>
+<div id="rankingLista"></div>
+</div>
 
+<button class="voltar" onclick="voltar()">Voltar</button>
+
+</div>
 </div>
 
 <script>
 
-let teams = JSON.parse(localStorage.getItem("teams")) || [];
-let wins = JSON.parse(localStorage.getItem("wins")) || {};
-let champion = null;
-let streak = 0;
-let banned = null; // time que saiu após 2 vitórias
-let currentMatch = [];
+let times = JSON.parse(localStorage.getItem("times")) || [];
+let fila = [...times];
+let atual = [];
+let contadorVitorias = 0;
+let timer;
+let segundos = 0;
 
-let seconds = 0;
-let timerInterval;
-
-function saveWins(){
-localStorage.setItem("wins",JSON.stringify(wins));
+if(times.length < 2){
+    alert("Cadastre pelo menos 2 times");
+    window.location.href="index.html";
 }
 
-function generateMatch(){
-
-if(teams.length < 2){
-document.getElementById("match").innerText="Cadastre pelo menos 2 times";
-return;
+function salvar(){
+    localStorage.setItem("times", JSON.stringify(times));
 }
 
-let available = teams.filter(t => t !== banned);
-
-if(champion && streak === 1){
-let opponents = available.filter(t => t !== champion);
-let opponent = opponents[Math.floor(Math.random()*opponents.length)];
-currentMatch = [champion, opponent];
-}
-else{
-let shuffled = [...available].sort(()=>0.5-Math.random());
-currentMatch = [shuffled[0], shuffled[1]];
+function atualizarRanking(){
+    let r = document.getElementById("rankingLista");
+    r.innerHTML="";
+    let ordenado = [...times].sort((a,b)=>b.vitorias-a.vitorias);
+    ordenado.forEach(t=>{
+        r.innerHTML += `<div>${t.nome} - ${t.vitorias} vitórias</div>`;
+    });
 }
 
-document.getElementById("match").innerText =
-currentMatch[0] + " VS " + currentMatch[1];
+function proximaPartida(){
+    if(fila.length < 2){
+        fila = [...times];
+    }
 
-resetTimer();
+    atual = [fila.shift(), fila.shift()];
+    document.getElementById("areaPartida").innerText =
+        atual[0].nome + " VS " + atual[1].nome;
+
+    iniciarCronometro();
 }
 
-function setWinner(index){
+function definirVencedor(num){
+    pararCronometro();
 
-let winner = currentMatch[index];
-wins[winner] = (wins[winner] || 0) + 1;
+    let vencedor = atual[num-1];
+    let perdedor = atual[num==1?1:0];
 
-document.getElementById("winner").innerText =
-"🏆 Último vencedor: " + winner;
+    vencedor.vitorias++;
+    salvar();
+    atualizarRanking();
 
-if(champion === winner){
-streak++;
-}else{
-champion = winner;
-streak = 1;
+    contadorVitorias++;
+
+    if(contadorVitorias == 1){
+        fila.unshift(vencedor);
+    } else {
+        contadorVitorias = 0;
+        fila.push(vencedor);
+    }
+
+    fila.push(perdedor);
+
+    proximaPartida();
 }
 
-if(streak === 2){
-banned = champion; // campeão sai
-champion = null;
-streak = 0;
-}
-else{
-banned = null;
-}
-
-saveWins();
-updateRanking();
-
-setTimeout(()=>{
-generateMatch();
-},1200);
+function iniciarCronometro(){
+    segundos=0;
+    document.getElementById("cronometro").innerText="00:00";
+    clearInterval(timer);
+    timer=setInterval(()=>{
+        segundos++;
+        let min=String(Math.floor(segundos/60)).padStart(2,"0");
+        let seg=String(segundos%60).padStart(2,"0");
+        document.getElementById("cronometro").innerText=min+":"+seg;
+    },1000);
 }
 
-function updateRanking(){
-let ul = document.getElementById("ranking");
-ul.innerHTML="";
-Object.keys(wins)
-.sort((a,b)=>wins[b]-wins[a])
-.forEach(team=>{
-let li=document.createElement("li");
-li.innerText=team+" - "+wins[team]+" vitórias";
-ul.appendChild(li);
-});
+function pararCronometro(){
+    clearInterval(timer);
 }
 
-function resetTimer(){
-clearInterval(timerInterval);
-seconds=0;
-timerInterval=setInterval(()=>{
-seconds++;
-let m=Math.floor(seconds/60);
-let s=seconds%60;
-document.getElementById("timer").innerText=
-(m<10?"0":"")+m+":"+(s<10?"0":"")+s;
-},1000);
+function voltar(){
+    window.location.href="index.html";
 }
 
-function goBack(){
-window.location.href="index.html";
-}
-
-updateRanking();
-generateMatch();
+atualizarRanking();
+proximaPartida();
 
 </script>
 
