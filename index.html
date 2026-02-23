@@ -3,39 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rota77 - Sistema Oficial</title>
+<title>Mix Play</title>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial;}
 body{
+margin:0;
+font-family:Arial;
 background:url('file_000000009aac71f5a38536be785d2478.png') no-repeat center center fixed;
 background-size:cover;
 color:white;
-min-height:100vh;
 }
 .overlay{
 background:rgba(0,0,0,0.75);
 min-height:100vh;
 padding:20px;
 }
+button{
+padding:12px;
+border:none;
+border-radius:8px;
+font-weight:bold;
+cursor:pointer;
+margin:5px;
+}
+.victory{background:#00c8ff;color:white;width:45%;}
+.back{background:#777;}
 .page{display:none;}
 .active{display:block;}
-h1{text-align:center;margin-bottom:20px;}
-input{padding:10px;width:70%;border-radius:8px;border:none;}
-button{padding:10px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;}
-.add-btn{background:#00ff88;}
-.remove-btn{background:#ff3333;padding:4px 8px;font-size:12px;}
-.start-btn{background:#ffaa00;width:100%;margin-top:15px;}
-.victory-btn{background:#00ccff;width:45%;margin:5px;}
-.back-btn{background:#777;margin-top:20px;}
-.game-box{
-background:rgba(255,255,255,0.1);
-padding:15px;
-border-radius:12px;
-text-align:center;
-margin-top:20px;
-}
-.ranking{margin-top:20px;}
 .ranking-item{
 display:flex;
 justify-content:space-between;
@@ -49,101 +43,44 @@ padding:5px 0;
 <body>
 <div class="overlay">
 
-<!-- CADASTRO -->
-<div id="cadastro" class="page active">
-<h1>Cadastro de Times</h1>
-
-<input type="text" id="teamInput" placeholder="Nome do time">
-<button class="add-btn" onclick="addTeam()">Adicionar</button>
-
-<div id="teamList"></div>
-
-<button class="start-btn" onclick="goToGame()">Ir para Partidas</button>
-</div>
-
-<!-- PARTIDAS -->
-<div id="partidas" class="page">
+<div id="game" class="active">
 <h1>Partidas</h1>
 
-<div class="game-box">
-<h2 id="matchDisplay">Aguardando...</h2>
+<h2 id="match"></h2>
 
-<button class="victory-btn" onclick="declareWinner(0)">Vitória Time 1</button>
-<button class="victory-btn" onclick="declareWinner(1)">Vitória Time 2</button>
+<button class="victory" id="btn1">Vitória Time 1</button>
+<button class="victory" id="btn2">Vitória Time 2</button>
 
 <div class="timer" id="timer">00:00</div>
-</div>
 
-<div class="ranking">
 <h2>Ranking</h2>
-<div id="rankingList"></div>
-</div>
+<div id="ranking"></div>
 
-<button class="back-btn" onclick="backToRegister()">Voltar</button>
 </div>
 
 </div>
 
 <script>
-let teams = JSON.parse(localStorage.getItem("teams")) || [];
+
+let teams = JSON.parse(localStorage.getItem("teams")) || ["Murilo","Ana","Carlos","João"];
 let stats = JSON.parse(localStorage.getItem("stats")) || {};
-let queue = [];
-let currentMatch = [];
-let consecutiveWins = 0;
-let lastWinner = null;
+
+teams.forEach(t=>{
+if(!stats[t]){
+stats[t]={wins:0,losses:0,saldo:0};
+}
+});
+
+let queue=[...teams];
+let currentMatch=[];
+let lastWinner=null;
+let streak=0;
+let seconds=0;
 let timerInterval;
-let seconds = 0;
 
 function save(){
-localStorage.setItem("teams", JSON.stringify(teams));
-localStorage.setItem("stats", JSON.stringify(stats));
-}
-
-function addTeam(){
-let input = document.getElementById("teamInput");
-let name = input.value.trim();
-if(!name) return;
-
-teams.push(name);
-stats[name] = stats[name] || {wins:0, losses:0, saldo:0};
-input.value="";
-save();
-renderTeams();
-renderRanking();
-}
-
-function removeTeam(name){
-teams = teams.filter(t=>t!==name);
-delete stats[name];
-save();
-renderTeams();
-renderRanking();
-}
-
-function renderTeams(){
-let list=document.getElementById("teamList");
-list.innerHTML="";
-teams.forEach(t=>{
-list.innerHTML+=`
-<div style="margin-top:8px;">
-${t}
-<button class="remove-btn" onclick="removeTeam('${t}')">X</button>
-</div>`;
-});
-}
-
-function goToGame(){
-if(teams.length<2) return alert("Cadastre pelo menos 2 times");
-queue=[...teams];
-shuffle(queue);
-nextMatch();
-document.getElementById("cadastro").classList.remove("active");
-document.getElementById("partidas").classList.add("active");
-}
-
-function backToRegister(){
-document.getElementById("partidas").classList.remove("active");
-document.getElementById("cadastro").classList.add("active");
+localStorage.setItem("teams",JSON.stringify(teams));
+localStorage.setItem("stats",JSON.stringify(stats));
 }
 
 function shuffle(arr){
@@ -154,18 +91,21 @@ let j=Math.floor(Math.random()*(i+1));
 }
 
 function nextMatch(){
+
 if(queue.length<2){
 queue=[...teams];
 shuffle(queue);
 }
 
-currentMatch=[queue.shift(), queue.shift()];
-document.getElementById("matchDisplay").innerText=
+currentMatch=[queue.shift(),queue.shift()];
+document.getElementById("match").innerText=
 currentMatch[0]+" VS "+currentMatch[1];
+
 resetTimer();
 }
 
-function declareWinner(index){
+function handleWinner(index){
+
 if(!currentMatch.length) return;
 
 let winner=currentMatch[index];
@@ -177,21 +117,16 @@ stats[loser].losses++;
 stats[loser].saldo--;
 
 if(lastWinner===winner){
-consecutiveWins++;
+streak++;
 }else{
-consecutiveWins=1;
+streak=1;
 lastWinner=winner;
 }
 
-/*
-REGRA CORRETA:
+/* REGRA DEFINITIVA */
 
-Se venceu 2 seguidas → sai
-Se perdeu → sai automaticamente
-*/
-
-if(consecutiveWins===2){
-consecutiveWins=0;
+if(streak===2){
+streak=0;
 lastWinner=null;
 queue.push(loser);
 }else{
@@ -205,15 +140,15 @@ nextMatch();
 }
 
 function renderRanking(){
-let div=document.getElementById("rankingList");
+let div=document.getElementById("ranking");
 div.innerHTML="";
-let sorted=[...teams].sort((a,b)=>stats[b].saldo - stats[a].saldo);
+let sorted=[...teams].sort((a,b)=>stats[b].saldo-stats[a].saldo);
 
 sorted.forEach(t=>{
 div.innerHTML+=`
 <div class="ranking-item">
 <span>${t}</span>
-<span>Saldo: ${stats[t].saldo}</span>
+<span>${stats[t].saldo}</span>
 </div>`;
 });
 }
@@ -230,8 +165,15 @@ String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
 },1000);
 }
 
-renderTeams();
+/* EVENT LISTENERS GARANTIDOS */
+
+document.getElementById("btn1").addEventListener("click",()=>handleWinner(0));
+document.getElementById("btn2").addEventListener("click",()=>handleWinner(1));
+
+shuffle(queue);
+nextMatch();
 renderRanking();
+
 </script>
 
 </body>
