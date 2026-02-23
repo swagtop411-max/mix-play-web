@@ -3,158 +3,111 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rei da Quadra - Rota77</title>
+<title>Cadastro de Times - Rota77</title>
 
 <style>
 body{
-font-family: Arial, sans-serif;
-background:#111;
+margin:0;
+font-family:Arial;
+background:url('file_000000009aac71f5a38536be785d2478.png') no-repeat center center fixed;
+background-size:cover;
 color:white;
 text-align:center;
-margin:0;
+}
+
+.overlay{
+background:rgba(0,0,0,0.8);
+min-height:100vh;
 padding:20px;
 }
 
-h1{
-color:#FFD700;
-}
-
 input{
-padding:8px;
-border-radius:5px;
+padding:10px;
 border:none;
+border-radius:5px;
+width:70%;
 }
 
 button{
-padding:8px 12px;
+padding:10px;
 border:none;
 border-radius:5px;
-cursor:pointer;
 margin:5px;
 font-weight:bold;
+cursor:pointer;
 }
 
-.addBtn{background:#00c853;color:white;}
-.winBtn{background:#FFD600;color:black;}
-.deleteBtn{background:#d50000;color:white;}
+.add{background:#00c853;color:white;}
+.go{background:#FFD600;color:black;}
+.delete{background:red;color:white;}
 
-.teamItem{
+.team{
+background:rgba(255,255,255,0.1);
+margin:5px auto;
+padding:8px;
+border-radius:5px;
 display:flex;
 justify-content:space-between;
-align-items:center;
-background:#222;
-padding:8px;
-margin:5px auto;
-width:90%;
-border-radius:5px;
-}
-
-#match{
-font-size:22px;
-margin:20px 0;
-color:#00e5ff;
-}
-
-#timer{
-font-size:20px;
-margin:10px 0;
-}
-
-ul{
-list-style:none;
-padding:0;
+max-width:400px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🏐 Rei da Quadra - Rota77</h1>
+<div class="overlay">
+
+<h1>🏐 Cadastro de Times</h1>
 
 <input type="text" id="teamInput" placeholder="Nome do time">
-<button class="addBtn" onclick="addTeam()">Adicionar</button>
+<button class="add" onclick="addTeam()">Cadastrar</button>
 
-<h2>Times</h2>
 <div id="teamList"></div>
 
-<h2>Partida Atual</h2>
-<div id="match">Aguardando times...</div>
-<div id="timer">00:00</div>
+<br>
+<button class="go" onclick="goToMatches()">Ir para Partidas</button>
 
-<button class="winBtn" onclick="setWinner(1)">Vitória Time 1</button>
-<button class="winBtn" onclick="setWinner(2)">Vitória Time 2</button>
-
-<h2>Ranking</h2>
-<ul id="ranking"></ul>
-
-<audio id="crowd" src="https://www.soundjay.com/human/applause-8.mp3"></audio>
+</div>
 
 <script>
 
 let teams = JSON.parse(localStorage.getItem("teams")) || [];
-let wins = JSON.parse(localStorage.getItem("wins")) || {};
-let currentMatch = JSON.parse(localStorage.getItem("currentMatch")) || [];
-let champion = JSON.parse(localStorage.getItem("champion")) || null;
-let streak = JSON.parse(localStorage.getItem("streak")) || 0;
-
-let seconds = 0;
-let timerInterval;
 
 function save(){
 localStorage.setItem("teams",JSON.stringify(teams));
-localStorage.setItem("wins",JSON.stringify(wins));
-localStorage.setItem("currentMatch",JSON.stringify(currentMatch));
-localStorage.setItem("champion",JSON.stringify(champion));
-localStorage.setItem("streak",JSON.stringify(streak));
 }
 
 function addTeam(){
 let name=document.getElementById("teamInput").value.trim();
 if(!name) return;
-if(teams.includes(name)) return alert("Time já existe");
+if(teams.includes(name)) return alert("Time já cadastrado");
 
 teams.push(name);
-wins[name]=wins[name]||0;
 document.getElementById("teamInput").value="";
 save();
-renderTeams();
-updateRanking();
-generateMatch();
+render();
 }
 
 function removeTeam(name){
 teams=teams.filter(t=>t!==name);
-delete wins[name];
-
-if(currentMatch.includes(name)) currentMatch=[];
-if(champion===name){
-champion=null;
-streak=0;
-}
-
 save();
-renderTeams();
-updateRanking();
-generateMatch();
+render();
 }
 
-function renderTeams(){
+function render(){
 let list=document.getElementById("teamList");
 list.innerHTML="";
-
 teams.forEach(team=>{
 let div=document.createElement("div");
-div.className="teamItem";
+div.className="team";
 
 let span=document.createElement("span");
 span.innerText=team;
 
 let btn=document.createElement("button");
-btn.className="deleteBtn";
 btn.innerText="Excluir";
-btn.onclick=function(){
-removeTeam(team);
-};
+btn.className="delete";
+btn.onclick=()=>removeTeam(team);
 
 div.appendChild(span);
 div.appendChild(btn);
@@ -162,102 +115,11 @@ list.appendChild(div);
 });
 }
 
-function generateMatch(){
-
-if(teams.length<2){
-document.getElementById("match").innerText="Aguardando times...";
-return;
+function goToMatches(){
+window.location.href="partidas.html";
 }
 
-if(champion && streak===1){
-let opponents=teams.filter(t=>t!==champion);
-let opponent=opponents[Math.floor(Math.random()*opponents.length)];
-currentMatch=[champion,opponent];
-}
-else{
-
-let pool=[...teams];
-
-if(champion && streak>=2){
-pool=pool.filter(t=>t!==champion);
-champion=null;
-streak=0;
-}
-
-let shuffled=pool.sort(()=>0.5-Math.random());
-currentMatch=[shuffled[0],shuffled[1]];
-}
-
-document.getElementById("match").innerText=
-currentMatch[0]+" VS "+currentMatch[1];
-
-resetTimer();
-save();
-}
-
-function setWinner(pos){
-
-if(currentMatch.length<2) return;
-
-let winner=currentMatch[pos-1];
-wins[winner]=(wins[winner]||0)+1;
-
-document.getElementById("crowd").play();
-
-if(champion===winner){
-streak++;
-}else{
-champion=winner;
-streak=1;
-}
-
-if(streak>=2){
-setTimeout(()=>{
-champion=null;
-streak=0;
-currentMatch=[];
-save();
-updateRanking();
-generateMatch();
-},1200);
-}
-else{
-setTimeout(()=>{
-currentMatch=[];
-save();
-updateRanking();
-generateMatch();
-},1200);
-}
-}
-
-function updateRanking(){
-let ul=document.getElementById("ranking");
-ul.innerHTML="";
-Object.keys(wins)
-.sort((a,b)=>wins[b]-wins[a])
-.forEach(team=>{
-let li=document.createElement("li");
-li.innerText=team+" - "+wins[team]+" vitórias";
-ul.appendChild(li);
-});
-}
-
-function resetTimer(){
-clearInterval(timerInterval);
-seconds=0;
-timerInterval=setInterval(()=>{
-seconds++;
-let m=Math.floor(seconds/60);
-let s=seconds%60;
-document.getElementById("timer").innerText=
-(m<10?"0":"")+m+":"+(s<10?"0":"")+s;
-},1000);
-}
-
-renderTeams();
-updateRanking();
-generateMatch();
+render();
 
 </script>
 
