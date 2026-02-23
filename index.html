@@ -128,23 +128,27 @@ margin:5px 0;
 Criado por <span>Murilo Pompeo</span>
 </footer>
 
+<!-- Sons -->
 <audio id="torcida" src="https://www.soundjay.com/human/cheering-01.mp3"></audio>
 <audio id="fim" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
-<audio id="musica" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
+<audio id="musica" src="https://cdn.pixabay.com/download/audio/2022/10/03/audio_9c6b1c5b50.mp3?filename=extreme-sport-rock-121662.mp3" loop></audio>
 
 <script>
-// Dados do sistema
+
+// Dados
 let times=[];
 let vitorias={};
-let confrontos=[];
 let atual=[];
 let tempo=900;
 let intervalo;
 
+let ultimoVencedor=null;
+let vitoriasSeguidas=0;
+
 // ADICIONAR TIME
 function addTime(){
-let nome=document.getElementById("nomeTime").value;
-if(nome.trim()!=""){
+let nome=document.getElementById("nomeTime").value.trim();
+if(nome!=""){
 times.push(nome);
 vitorias[nome]=0;
 document.getElementById("nomeTime").value="";
@@ -153,7 +157,7 @@ atualizarRanking();
 }
 }
 
-// MOSTRAR TIMES CADASTRADOS
+// MOSTRAR TIMES
 function mostrarTimes(){
 let lista=document.getElementById("lista");
 lista.innerHTML="";
@@ -172,7 +176,7 @@ mostrarTimes();
 atualizarRanking();
 }
 
-// INICIAR PARTIDAS
+// INICIAR
 function iniciar(){
 if(times.length<2){alert("Cadastre pelo menos 2 times"); return;}
 document.getElementById("cadastro").style.display="none";
@@ -182,7 +186,7 @@ gerarPartida();
 atualizarRanking();
 }
 
-// VOLTAR PARA CADASTRO
+// VOLTAR
 function voltar(){
 document.getElementById("cadastro").style.display="block";
 document.getElementById("partidas").style.display="none";
@@ -190,36 +194,52 @@ clearInterval(intervalo);
 resetTimer();
 }
 
-// GERAR PARTIDA AUTOMÁTICA
+// GERAR PARTIDA
 function gerarPartida(){
-if(confrontos.length >= (times.length*(times.length-1))/2){
-confrontos=[];
-}
-let t1,t2,comb;
-do{
-t1=Math.floor(Math.random()*times.length);
-t2=Math.floor(Math.random()*times.length);
-}while(t1==t2);
 
-comb=[times[t1],times[t2]].sort().join("-");
-if(confrontos.includes(comb)){
-gerarPartida();
-return;
+if(times.length < 2) return;
+
+let candidatos = [...times];
+
+if(ultimoVencedor && vitoriasSeguidas >= 2){
+candidatos = candidatos.filter(t => t !== ultimoVencedor);
+ultimoVencedor = null;
+vitoriasSeguidas = 0;
 }
-confrontos.push(comb);
-atual=[times[t1],times[t2]];
+
+let t1 = candidatos[Math.floor(Math.random()*candidatos.length)];
+let t2;
+
+do{
+t2 = candidatos[Math.floor(Math.random()*candidatos.length)];
+}while(t1 === t2);
+
+atual = [t1, t2];
+
 document.getElementById("jogo").innerHTML=`${atual[0]} VS ${atual[1]}`;
 resetTimer();
 }
 
-// REGISTRAR VENCEDOR
+// VENCEDOR
 function vencedor(num){
+
 clearInterval(intervalo);
-let nome=atual[num-1];
+
+let nome = atual[num-1];
 vitorias[nome]++;
+
 document.getElementById("torcida").play();
 document.getElementById("jogo").innerHTML=`🏆 <span class="vencedor">${nome} venceu!</span>`;
+
+if(nome === ultimoVencedor){
+vitoriasSeguidas++;
+}else{
+ultimoVencedor = nome;
+vitoriasSeguidas = 1;
+}
+
 atualizarRanking();
+
 setTimeout(()=>{gerarPartida();},3000);
 }
 
@@ -246,7 +266,7 @@ document.getElementById("timer").innerText=
 (min<10?"0":"")+min+":"+(seg<10?"0":"")+seg;
 }
 
-// ATUALIZAR RANKING
+// RANKING
 function atualizarRanking(){
 let rankingDiv = document.getElementById("ranking");
 rankingDiv.innerHTML="";
@@ -256,7 +276,7 @@ rankingDiv.innerHTML+=`<div>${index+1}º - ${nome} (${pontos} vitórias)</div>`;
 });
 }
 
-// INICIALIZA LISTA
+// INICIALIZA
 mostrarTimes();
 atualizarRanking();
 
