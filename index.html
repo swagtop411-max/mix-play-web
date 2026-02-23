@@ -3,101 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mix Play Web</title>
+<title>Cadastro de Times</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Arial, Helvetica, sans-serif;
-}
-
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial;}
 body{
     min-height:100vh;
-    background: url("file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
-    background-size: cover;
+    background:url("file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
+    background-size:cover;
     color:#fff;
-    display:flex;
-    justify-content:center;
 }
-
 .overlay{
-    width:100%;
     min-height:100vh;
     background:rgba(0,0,0,0.75);
     padding:20px;
 }
-
-h1{
-    text-align:center;
-    margin-bottom:20px;
-}
-
-.container{
-    max-width:600px;
-    margin:auto;
-}
-
-input, button{
+.container{max-width:600px;margin:auto;}
+h1{text-align:center;margin-bottom:20px;}
+input,button{
+    width:100%;
     padding:10px;
     margin:5px 0;
     border:none;
     border-radius:6px;
 }
-
-input{
-    width:100%;
-}
-
 button{
     background:#00c853;
     color:#fff;
-    cursor:pointer;
     font-weight:bold;
 }
-
-button:hover{
-    opacity:0.9;
-}
-
 .time{
     display:flex;
     justify-content:space-between;
-    align-items:center;
     background:#1c1c1c;
     padding:8px;
     border-radius:6px;
     margin:5px 0;
 }
-
 .delete{
     background:#c62828;
     padding:5px 8px;
     font-size:12px;
-}
-
-.partida{
-    background:#1c1c1c;
-    padding:10px;
-    border-radius:6px;
-    margin-top:15px;
-    text-align:center;
-}
-
-.vencedor{
-    background:#2962ff;
-    margin-top:10px;
-}
-
-.ranking{
-    margin-top:20px;
-}
-
-.cronometro{
-    text-align:center;
-    font-size:24px;
-    margin-top:10px;
 }
 </style>
 </head>
@@ -106,38 +52,20 @@ button:hover{
 <div class="overlay">
 <div class="container">
 
-<h1>Mix Play Web</h1>
+<h1>Cadastro de Times</h1>
 
 <input type="text" id="nomeTime" placeholder="Nome do Time">
 <button onclick="adicionarTime()">Adicionar Time</button>
 
 <div id="listaTimes"></div>
 
-<div class="partida" id="areaPartida" style="display:none;">
-    <h3 id="jogoAtual"></h3>
-    <button class="vencedor" onclick="definirVencedor(1)">Time 1 venceu</button>
-    <button class="vencedor" onclick="definirVencedor(2)">Time 2 venceu</button>
-    <div class="cronometro" id="cronometro">00:00</div>
-</div>
-
-<button onclick="iniciarJogo()">Iniciar</button>
-
-<div class="ranking">
-    <h3>Ranking</h3>
-    <div id="rankingLista"></div>
-</div>
+<button onclick="irParaPartidas()">Ir para Partidas</button>
 
 </div>
 </div>
 
 <script>
-
 let times = JSON.parse(localStorage.getItem("times")) || [];
-let fila = [];
-let atual = [];
-let contadorVitorias = 0;
-let timer;
-let segundos = 0;
 
 function salvar(){
     localStorage.setItem("times", JSON.stringify(times));
@@ -146,19 +74,16 @@ function salvar(){
 function adicionarTime(){
     let nome = document.getElementById("nomeTime").value.trim();
     if(!nome) return;
-
     times.push({nome:nome, vitorias:0});
     document.getElementById("nomeTime").value="";
     salvar();
     atualizarLista();
-    atualizarRanking();
 }
 
 function excluirTime(index){
     times.splice(index,1);
     salvar();
     atualizarLista();
-    atualizarRanking();
 }
 
 function atualizarLista(){
@@ -173,83 +98,11 @@ function atualizarLista(){
     });
 }
 
-function atualizarRanking(){
-    let r = document.getElementById("rankingLista");
-    r.innerHTML="";
-    let ordenado = [...times].sort((a,b)=>b.vitorias-a.vitorias);
-    ordenado.forEach(t=>{
-        r.innerHTML += `<div>${t.nome} - ${t.vitorias} vitórias</div>`;
-    });
-}
-
-function iniciarJogo(){
-    if(times.length < 2) return alert("Cadastre pelo menos 2 times");
-
-    fila = [...times];
-    contadorVitorias = 0;
-    proximaPartida();
-}
-
-function proximaPartida(){
-
-    if(fila.length < 2){
-        fila = [...times];
-    }
-
-    atual = [fila.shift(), fila.shift()];
-    document.getElementById("areaPartida").style.display="block";
-    document.getElementById("jogoAtual").innerText =
-        atual[0].nome + " VS " + atual[1].nome;
-
-    iniciarCronometro();
-}
-
-function definirVencedor(num){
-
-    pararCronometro();
-
-    let vencedor = atual[num-1];
-    let perdedor = atual[num==1?1:0];
-
-    vencedor.vitorias++;
-    atualizarRanking();
-    salvar();
-
-    contadorVitorias++;
-
-    // regra correta:
-    // vencedor joga no máximo 2 vezes
-    if(contadorVitorias == 1){
-        fila.unshift(vencedor); // joga mais 1 vez
-    } else {
-        contadorVitorias = 0;
-        fila.push(vencedor); // volta para o final
-    }
-
-    fila.push(perdedor);
-
-    proximaPartida();
-}
-
-function iniciarCronometro(){
-    segundos = 0;
-    document.getElementById("cronometro").innerText="00:00";
-    clearInterval(timer);
-    timer = setInterval(()=>{
-        segundos++;
-        let min = String(Math.floor(segundos/60)).padStart(2,"0");
-        let seg = String(segundos%60).padStart(2,"0");
-        document.getElementById("cronometro").innerText=min+":"+seg;
-    },1000);
-}
-
-function pararCronometro(){
-    clearInterval(timer);
+function irParaPartidas(){
+    window.location.href = "partidas.html";
 }
 
 atualizarLista();
-atualizarRanking();
-
 </script>
 
 </body>
