@@ -3,95 +3,60 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mix Play Web - Beach Edition</title>
+<title>Gerenciador de Partidas - Rota77</title>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial, sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
 
 body{
-background:url("file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
+background:url('file_000000009aac71f5a38536be785d2478.png') no-repeat center center fixed;
 background-size:cover;
 color:white;
 text-align:center;
-min-height:100vh;
-display:flex;
-flex-direction:column;
 }
 
 .overlay{
-background:rgba(0,0,0,0.6);
-flex:1;
+background:rgba(0,0,0,0.75);
+min-height:100vh;
 padding:20px;
 }
 
-h1{
-margin-bottom:20px;
-text-shadow:0 0 15px orange;
-}
+h1{margin-bottom:15px}
 
 input,button{
 padding:10px;
-margin:5px;
 border:none;
 border-radius:8px;
+margin:5px;
+font-weight:bold;
 }
 
 button{
-background:orange;
-color:black;
-font-weight:bold;
 cursor:pointer;
-transition:0.3s;
+background:#ffcc00;
 }
 
 button:hover{
-transform:scale(1.05);
+background:#ffaa00;
 }
 
-.lista-times{
-margin-top:15px;
-}
-
-.partida{
-margin-top:20px;
-font-size:22px;
-font-weight:bold;
+.card{
+background:rgba(255,255,255,0.1);
+padding:15px;
+border-radius:12px;
+margin:15px auto;
+max-width:400px;
 }
 
 .timer{
-font-size:28px;
-margin-top:15px;
-color:#ffcc00;
-text-shadow:0 0 10px yellow;
+font-size:22px;
+margin-top:10px;
 }
 
-.vencedor{
-animation:brilho 1s infinite alternate;
-}
-
-@keyframes brilho{
-from{text-shadow:0 0 5px white;}
-to{text-shadow:0 0 25px orange;}
-}
-
-.rodape{
-position:fixed;
-bottom:0;
-width:100%;
-text-align:center;
-padding:8px;
-background:rgba(0,0,0,0.7);
+footer{
+margin-top:40px;
 font-size:14px;
-}
-
-.rodape span{
-color:#ff9800;
-font-weight:bold;
-text-shadow:0 0 10px orange;
-}
-
-#ranking div{
-margin:5px 0;
+opacity:0.8;
 }
 </style>
 </head>
@@ -100,186 +65,170 @@ margin:5px 0;
 
 <div class="overlay">
 
-<h1>🏐 Mix Play Web</h1>
+<h1>🏐 Gerenciador de Partidas</h1>
 
-<!-- TELA DE CADASTRO -->
-<div id="cadastro">
-<input type="text" id="nomeTime" placeholder="Nome do Time">
-<button onclick="addTime()">Adicionar</button>
-<div class="lista-times" id="lista"></div>
-<button onclick="iniciar()">Iniciar Partidas</button>
+<div class="card">
+<input type="text" id="teamInput" placeholder="Nome do time">
+<button onclick="addTeam()">Cadastrar Time</button>
+<button onclick="deleteTeam()">Excluir Time</button>
 </div>
 
-<!-- TELA DE PARTIDAS -->
-<div id="partidas" style="display:none;">
-<div class="partida" id="jogo"></div>
-<div class="timer" id="timer">15:00</div>
-<button onclick="vencedor(1)">Time 1 venceu</button>
-<button onclick="vencedor(2)">Time 2 venceu</button>
-<button onclick="voltar()">Voltar</button>
-
-<h3 style="margin-top:20px;">🏆 Ranking de Vitórias</h3>
-<div id="ranking"></div>
+<div class="card">
+<h2>Partida Atual</h2>
+<h3 id="match"></h3>
+<button onclick="setWinner(1)">Time 1 Venceu</button>
+<button onclick="setWinner(2)">Time 2 Venceu</button>
+<div class="timer" id="timer">00:00</div>
 </div>
 
+<div class="card">
+<h2>Ranking</h2>
+<ul id="ranking"></ul>
 </div>
 
-<footer class="rodape">
-Criado por <span>Murilo Pompeo</span>
+<footer>
+Criado por Murilo Pompeo
 </footer>
 
-<!-- Sons -->
-<audio id="torcida" src="https://www.soundjay.com/human/cheering-01.mp3"></audio>
-<audio id="fim" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
-<audio id="musica" src="https://cdn.pixabay.com/download/audio/2022/10/03/audio_9c6b1c5b50.mp3?filename=extreme-sport-rock-121662.mp3" loop></audio>
+<audio id="bgMusic" loop>
+<source src="https://cdn.pixabay.com/download/audio/2023/03/21/audio_5f0c8e4cfa.mp3?filename=sport-rock-145474.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="winSound">
+<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_115b9b8c3b.mp3?filename=small-crowd-applause-6695.mp3" type="audio/mpeg">
+</audio>
+
+</div>
 
 <script>
+let teams = JSON.parse(localStorage.getItem("teams")) || [];
+let wins = JSON.parse(localStorage.getItem("wins")) || {};
+let currentMatch = JSON.parse(localStorage.getItem("currentMatch")) || [];
+let winStreak = JSON.parse(localStorage.getItem("winStreak")) || {team:null,count:0};
 
-// Dados
-let times=[];
-let vitorias={};
-let atual=[];
-let tempo=900;
-let intervalo;
+let seconds = 0;
+let timerInterval;
 
-let ultimoVencedor=null;
-let vitoriasSeguidas=0;
+const music = document.getElementById("bgMusic");
+document.body.addEventListener("click",()=>{music.play()},{once:true});
 
-// ADICIONAR TIME
-function addTime(){
-let nome=document.getElementById("nomeTime").value.trim();
-if(nome!=""){
-times.push(nome);
-vitorias[nome]=0;
-document.getElementById("nomeTime").value="";
-mostrarTimes();
-atualizarRanking();
-}
+function saveData(){
+localStorage.setItem("teams",JSON.stringify(teams));
+localStorage.setItem("wins",JSON.stringify(wins));
+localStorage.setItem("currentMatch",JSON.stringify(currentMatch));
+localStorage.setItem("winStreak",JSON.stringify(winStreak));
 }
 
-// MOSTRAR TIMES
-function mostrarTimes(){
-let lista=document.getElementById("lista");
-lista.innerHTML="";
-times.forEach((t,i)=>{
-lista.innerHTML+=`<div>${t} <button onclick="remover(${i})">X</button></div>`;
+function addTeam(){
+let name=document.getElementById("teamInput").value.trim();
+if(!name) return;
+if(teams.includes(name)) return alert("Time já cadastrado");
+
+teams.push(name);
+wins[name]=wins[name]||0;
+document.getElementById("teamInput").value="";
+saveData();
+updateRanking();
+generateMatch();
+}
+
+function deleteTeam(){
+let name=prompt("Digite o nome do time para excluir:");
+if(!name) return;
+teams=teams.filter(t=>t!==name);
+delete wins[name];
+if(currentMatch.includes(name)) currentMatch=[];
+saveData();
+updateRanking();
+generateMatch();
+}
+
+function generateMatch(){
+if(teams.length<2) return;
+
+if(currentMatch.length===2){
+document.getElementById("match").innerText=currentMatch[0]+" VS "+currentMatch[1];
+resetTimer();
+return;
+}
+
+let available=[...teams];
+
+if(winStreak.team && winStreak.count===1){
+available=available.filter(t=>t!==winStreak.team);
+let opponent=available[Math.floor(Math.random()*available.length)];
+currentMatch=[winStreak.team,opponent];
+}
+
+else{
+let shuffled=[...teams].sort(()=>0.5-Math.random());
+currentMatch=[shuffled[0],shuffled[1]];
+}
+
+saveData();
+document.getElementById("match").innerText=currentMatch[0]+" VS "+currentMatch[1];
+resetTimer();
+}
+
+function setWinner(pos){
+if(currentMatch.length<2) return;
+
+let winner=currentMatch[pos-1];
+let loser=currentMatch[pos===1?1:0];
+
+wins[winner]=(wins[winner]||0)+1;
+document.getElementById("winSound").play();
+
+if(winStreak.team===winner){
+winStreak.count++;
+}else{
+winStreak.team=winner;
+winStreak.count=1;
+}
+
+if(winStreak.count===2){
+winStreak={team:null,count:0};
+currentMatch=[];
+}else{
+currentMatch=[];
+}
+
+saveData();
+updateRanking();
+generateMatch();
+}
+
+function updateRanking(){
+let list=document.getElementById("ranking");
+list.innerHTML="";
+Object.keys(wins)
+.sort((a,b)=>wins[b]-wins[a])
+.forEach(team=>{
+let li=document.createElement("li");
+li.textContent=team+" - "+wins[team]+" vitórias";
+list.appendChild(li);
 });
 }
 
-// REMOVER TIME
-function remover(i){
-let nomeRemovido = times[i];
-if(!confirm("Deseja excluir o time " + nomeRemovido + "?")) return;
-times.splice(i,1);
-delete vitorias[nomeRemovido];
-mostrarTimes();
-atualizarRanking();
-}
-
-// INICIAR
-function iniciar(){
-if(times.length<2){alert("Cadastre pelo menos 2 times"); return;}
-document.getElementById("cadastro").style.display="none";
-document.getElementById("partidas").style.display="block";
-document.getElementById("musica").play();
-gerarPartida();
-atualizarRanking();
-}
-
-// VOLTAR
-function voltar(){
-document.getElementById("cadastro").style.display="block";
-document.getElementById("partidas").style.display="none";
-clearInterval(intervalo);
-resetTimer();
-}
-
-// GERAR PARTIDA
-function gerarPartida(){
-
-if(times.length < 2) return;
-
-let candidatos = [...times];
-
-if(ultimoVencedor && vitoriasSeguidas >= 2){
-candidatos = candidatos.filter(t => t !== ultimoVencedor);
-ultimoVencedor = null;
-vitoriasSeguidas = 0;
-}
-
-let t1 = candidatos[Math.floor(Math.random()*candidatos.length)];
-let t2;
-
-do{
-t2 = candidatos[Math.floor(Math.random()*candidatos.length)];
-}while(t1 === t2);
-
-atual = [t1, t2];
-
-document.getElementById("jogo").innerHTML=`${atual[0]} VS ${atual[1]}`;
-resetTimer();
-}
-
-// VENCEDOR
-function vencedor(num){
-
-clearInterval(intervalo);
-
-let nome = atual[num-1];
-vitorias[nome]++;
-
-document.getElementById("torcida").play();
-document.getElementById("jogo").innerHTML=`🏆 <span class="vencedor">${nome} venceu!</span>`;
-
-if(nome === ultimoVencedor){
-vitoriasSeguidas++;
-}else{
-ultimoVencedor = nome;
-vitoriasSeguidas = 1;
-}
-
-atualizarRanking();
-
-setTimeout(()=>{gerarPartida();},3000);
-}
-
-// CRONÔMETRO
 function resetTimer(){
-tempo=900;
+clearInterval(timerInterval);
+seconds=0;
 updateTimer();
-clearInterval(intervalo);
-intervalo=setInterval(()=>{
-tempo--;
+timerInterval=setInterval(()=>{
+seconds++;
 updateTimer();
-if(tempo<=0){
-clearInterval(intervalo);
-document.getElementById("fim").play();
-alert("Tempo esgotado!");
-}
 },1000);
 }
 
 function updateTimer(){
-let min=Math.floor(tempo/60);
-let seg=tempo%60;
+let min=Math.floor(seconds/60);
+let sec=seconds%60;
 document.getElementById("timer").innerText=
-(min<10?"0":"")+min+":"+(seg<10?"0":"")+seg;
+(min<10?"0":"")+min+":"+(sec<10?"0":"")+sec;
 }
 
-// RANKING
-function atualizarRanking(){
-let rankingDiv = document.getElementById("ranking");
-rankingDiv.innerHTML="";
-let ordenado = Object.entries(vitorias).sort((a,b)=>b[1]-a[1]);
-ordenado.forEach(([nome,pontos],index)=>{
-rankingDiv.innerHTML+=`<div>${index+1}º - ${nome} (${pontos} vitórias)</div>`;
-});
-}
-
-// INICIALIZA
-mostrarTimes();
-atualizarRanking();
-
+updateRanking();
+generateMatch();
 </script>
 
 </body>
