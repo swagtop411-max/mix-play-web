@@ -3,59 +3,84 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gerenciador de Partidas - Rota77</title>
+<title>Gerenciador Rota77</title>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
 
 body{
 background:url('file_000000009aac71f5a38536be785d2478.png') no-repeat center center fixed;
 background-size:cover;
 color:white;
-text-align:center;
 }
 
 .overlay{
 background:rgba(0,0,0,0.75);
 min-height:100vh;
 padding:20px;
+text-align:center;
 }
 
-h1{margin-bottom:15px}
+h1{margin-bottom:20px}
 
-input,button{
-padding:10px;
+.section{
+background:rgba(255,255,255,0.1);
+padding:15px;
+border-radius:10px;
+margin:15px auto;
+max-width:400px;
+}
+
+input{
+padding:8px;
 border:none;
-border-radius:8px;
-margin:5px;
-font-weight:bold;
+border-radius:6px;
+width:70%;
 }
 
 button{
-cursor:pointer;
+padding:8px 12px;
+border:none;
+border-radius:6px;
 background:#ffcc00;
+font-weight:bold;
+cursor:pointer;
+margin:4px;
 }
 
 button:hover{
 background:#ffaa00;
 }
 
-.card{
-background:rgba(255,255,255,0.1);
-padding:15px;
-border-radius:12px;
-margin:15px auto;
-max-width:400px;
+.match{
+font-size:20px;
+margin:10px 0;
 }
 
 .timer{
 font-size:22px;
-margin-top:10px;
+margin-top:8px;
+}
+
+.teamItem{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin:5px 0;
+background:rgba(255,255,255,0.1);
+padding:6px;
+border-radius:6px;
+}
+
+.deleteBtn{
+background:red;
+color:white;
+padding:4px 8px;
+font-size:12px;
 }
 
 footer{
-margin-top:40px;
-font-size:14px;
+margin-top:30px;
 opacity:0.8;
 }
 </style>
@@ -67,21 +92,21 @@ opacity:0.8;
 
 <h1>🏐 Gerenciador de Partidas</h1>
 
-<div class="card">
+<div class="section">
 <input type="text" id="teamInput" placeholder="Nome do time">
-<button onclick="addTeam()">Cadastrar Time</button>
-<button onclick="deleteTeam()">Excluir Time</button>
+<button onclick="addTeam()">Cadastrar</button>
+<div id="teamList"></div>
 </div>
 
-<div class="card">
+<div class="section">
 <h2>Partida Atual</h2>
-<h3 id="match"></h3>
+<div class="match" id="match">Aguardando times...</div>
 <button onclick="setWinner(1)">Time 1 Venceu</button>
 <button onclick="setWinner(2)">Time 2 Venceu</button>
 <div class="timer" id="timer">00:00</div>
 </div>
 
-<div class="card">
+<div class="section">
 <h2>Ranking</h2>
 <ul id="ranking"></ul>
 </div>
@@ -90,13 +115,7 @@ opacity:0.8;
 Criado por Murilo Pompeo
 </footer>
 
-<audio id="bgMusic" loop>
-<source src="https://cdn.pixabay.com/download/audio/2023/03/21/audio_5f0c8e4cfa.mp3?filename=sport-rock-145474.mp3" type="audio/mpeg">
-</audio>
-
-<audio id="winSound">
-<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_115b9b8c3b.mp3?filename=small-crowd-applause-6695.mp3" type="audio/mpeg">
-</audio>
+<audio id="crowd" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_115b9b8c3b.mp3"></audio>
 
 </div>
 
@@ -106,13 +125,10 @@ let wins = JSON.parse(localStorage.getItem("wins")) || {};
 let currentMatch = JSON.parse(localStorage.getItem("currentMatch")) || [];
 let winStreak = JSON.parse(localStorage.getItem("winStreak")) || {team:null,count:0};
 
-let seconds = 0;
+let seconds=0;
 let timerInterval;
 
-const music = document.getElementById("bgMusic");
-document.body.addEventListener("click",()=>{music.play()},{once:true});
-
-function saveData(){
+function save(){
 localStorage.setItem("teams",JSON.stringify(teams));
 localStorage.setItem("wins",JSON.stringify(wins));
 localStorage.setItem("currentMatch",JSON.stringify(currentMatch));
@@ -122,29 +138,43 @@ localStorage.setItem("winStreak",JSON.stringify(winStreak));
 function addTeam(){
 let name=document.getElementById("teamInput").value.trim();
 if(!name) return;
-if(teams.includes(name)) return alert("Time já cadastrado");
-
+if(teams.includes(name)) return alert("Time já existe");
 teams.push(name);
 wins[name]=wins[name]||0;
 document.getElementById("teamInput").value="";
-saveData();
+save();
+renderTeams();
 updateRanking();
 generateMatch();
 }
 
-function deleteTeam(){
-let name=prompt("Digite o nome do time para excluir:");
-if(!name) return;
+function removeTeam(name){
 teams=teams.filter(t=>t!==name);
 delete wins[name];
 if(currentMatch.includes(name)) currentMatch=[];
-saveData();
+save();
+renderTeams();
 updateRanking();
 generateMatch();
 }
 
+function renderTeams(){
+let list=document.getElementById("teamList");
+list.innerHTML="";
+teams.forEach(team=>{
+let div=document.createElement("div");
+div.className="teamItem";
+div.innerHTML=`${team} 
+<button class="deleteBtn" onclick="removeTeam('${team}')">Excluir</button>`;
+list.appendChild(div);
+});
+}
+
 function generateMatch(){
-if(teams.length<2) return;
+if(teams.length<2){
+document.getElementById("match").innerText="Aguardando times...";
+return;
+}
 
 if(currentMatch.length===2){
 document.getElementById("match").innerText=currentMatch[0]+" VS "+currentMatch[1];
@@ -152,20 +182,16 @@ resetTimer();
 return;
 }
 
-let available=[...teams];
-
 if(winStreak.team && winStreak.count===1){
-available=available.filter(t=>t!==winStreak.team);
-let opponent=available[Math.floor(Math.random()*available.length)];
+let opponents=teams.filter(t=>t!==winStreak.team);
+let opponent=opponents[Math.floor(Math.random()*opponents.length)];
 currentMatch=[winStreak.team,opponent];
-}
-
-else{
+}else{
 let shuffled=[...teams].sort(()=>0.5-Math.random());
 currentMatch=[shuffled[0],shuffled[1]];
 }
 
-saveData();
+save();
 document.getElementById("match").innerText=currentMatch[0]+" VS "+currentMatch[1];
 resetTimer();
 }
@@ -174,10 +200,8 @@ function setWinner(pos){
 if(currentMatch.length<2) return;
 
 let winner=currentMatch[pos-1];
-let loser=currentMatch[pos===1?1:0];
-
 wins[winner]=(wins[winner]||0)+1;
-document.getElementById("winSound").play();
+document.getElementById("crowd").play();
 
 if(winStreak.team===winner){
 winStreak.count++;
@@ -186,47 +210,41 @@ winStreak.team=winner;
 winStreak.count=1;
 }
 
-if(winStreak.count===2){
+if(winStreak.count>=2){
 winStreak={team:null,count:0};
-currentMatch=[];
-}else{
-currentMatch=[];
 }
 
-saveData();
+currentMatch=[];
+save();
 updateRanking();
 generateMatch();
 }
 
 function updateRanking(){
-let list=document.getElementById("ranking");
-list.innerHTML="";
+let ul=document.getElementById("ranking");
+ul.innerHTML="";
 Object.keys(wins)
 .sort((a,b)=>wins[b]-wins[a])
 .forEach(team=>{
 let li=document.createElement("li");
-li.textContent=team+" - "+wins[team]+" vitórias";
-list.appendChild(li);
+li.innerText=team+" - "+wins[team]+" vitórias";
+ul.appendChild(li);
 });
 }
 
 function resetTimer(){
 clearInterval(timerInterval);
 seconds=0;
-updateTimer();
 timerInterval=setInterval(()=>{
 seconds++;
-updateTimer();
+let m=Math.floor(seconds/60);
+let s=seconds%60;
+document.getElementById("timer").innerText=
+(m<10?"0":"")+m+":"+(s<10?"0":"")+s;
 },1000);
 }
 
-function updateTimer(){
-let min=Math.floor(seconds/60);
-let sec=seconds%60;
-document.getElementById("timer").innerText=
-(min<10?"0":"")+min+":"+(sec<10?"0":"")+sec;
-}
-
+renderTeams();
 updateRanking();
 generateMatch();
 </script>
