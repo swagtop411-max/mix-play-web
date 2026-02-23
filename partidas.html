@@ -16,7 +16,7 @@ text-align:center;
 }
 
 .overlay{
-background:rgba(0,0,0,0.8);
+background:rgba(0,0,0,0.85);
 min-height:100vh;
 padding:20px;
 }
@@ -38,8 +38,20 @@ font-size:24px;
 margin:20px 0;
 }
 
+#winner{
+font-size:18px;
+color:#FFD600;
+margin:10px 0;
+}
+
 #timer{
 font-size:20px;
+margin:10px 0;
+}
+
+ul{
+list-style:none;
+padding:0;
 }
 </style>
 </head>
@@ -50,13 +62,17 @@ font-size:20px;
 
 <h1>🏐 Rei da Quadra</h1>
 
-<div id="match">Carregando...</div>
+<div id="match"></div>
+<div id="winner"></div>
 <div id="timer">00:00</div>
 
 <button class="win" onclick="setWinner(0)">Vitória Time 1</button>
 <button class="win" onclick="setWinner(1)">Vitória Time 2</button>
 
-<br><br>
+<h2>Ranking</h2>
+<ul id="ranking"></ul>
+
+<br>
 <button class="back" onclick="goBack()">Voltar</button>
 
 </div>
@@ -65,62 +81,85 @@ font-size:20px;
 
 let teams = JSON.parse(localStorage.getItem("teams")) || [];
 let wins = JSON.parse(localStorage.getItem("wins")) || {};
-let champion = JSON.parse(localStorage.getItem("champion")) || null;
-let streak = JSON.parse(localStorage.getItem("streak")) || 0;
+let champion = null;
+let streak = 0;
+let banned = null; // time que saiu após 2 vitórias
 let currentMatch = [];
 
-let seconds=0;
+let seconds = 0;
 let timerInterval;
 
-function save(){
+function saveWins(){
 localStorage.setItem("wins",JSON.stringify(wins));
-localStorage.setItem("champion",JSON.stringify(champion));
-localStorage.setItem("streak",JSON.stringify(streak));
 }
 
 function generateMatch(){
 
-if(teams.length<2){
+if(teams.length < 2){
 document.getElementById("match").innerText="Cadastre pelo menos 2 times";
 return;
 }
 
-if(champion && streak===1){
-let opponents=teams.filter(t=>t!==champion);
-let opponent=opponents[Math.floor(Math.random()*opponents.length)];
-currentMatch=[champion,opponent];
+let available = teams.filter(t => t !== banned);
+
+if(champion && streak === 1){
+let opponents = available.filter(t => t !== champion);
+let opponent = opponents[Math.floor(Math.random()*opponents.length)];
+currentMatch = [champion, opponent];
 }
 else{
-
-if(streak>=2){
-champion=null;
-streak=0;
+let shuffled = [...available].sort(()=>0.5-Math.random());
+currentMatch = [shuffled[0], shuffled[1]];
 }
 
-let shuffled=[...teams].sort(()=>0.5-Math.random());
-currentMatch=[shuffled[0],shuffled[1]];
-}
-
-document.getElementById("match").innerText=
-currentMatch[0]+" VS "+currentMatch[1];
+document.getElementById("match").innerText =
+currentMatch[0] + " VS " + currentMatch[1];
 
 resetTimer();
 }
 
 function setWinner(index){
 
-let winner=currentMatch[index];
-wins[winner]=(wins[winner]||0)+1;
+let winner = currentMatch[index];
+wins[winner] = (wins[winner] || 0) + 1;
 
-if(champion===winner){
+document.getElementById("winner").innerText =
+"🏆 Último vencedor: " + winner;
+
+if(champion === winner){
 streak++;
 }else{
-champion=winner;
-streak=1;
+champion = winner;
+streak = 1;
 }
 
-save();
+if(streak === 2){
+banned = champion; // campeão sai
+champion = null;
+streak = 0;
+}
+else{
+banned = null;
+}
+
+saveWins();
+updateRanking();
+
+setTimeout(()=>{
 generateMatch();
+},1200);
+}
+
+function updateRanking(){
+let ul = document.getElementById("ranking");
+ul.innerHTML="";
+Object.keys(wins)
+.sort((a,b)=>wins[b]-wins[a])
+.forEach(team=>{
+let li=document.createElement("li");
+li.innerText=team+" - "+wins[team]+" vitórias";
+ul.appendChild(li);
+});
 }
 
 function resetTimer(){
@@ -139,6 +178,7 @@ function goBack(){
 window.location.href="index.html";
 }
 
+updateRanking();
 generateMatch();
 
 </script>
