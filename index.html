@@ -1,201 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mix Play Web - Beach Edition</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial, sans-serif;}
+
+body{
+background:url("file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
+background-size:cover;
+color:white;
+text-align:center;
+min-height:100vh;
+display:flex;
+flex-direction:column;
+}
+
+.overlay{
+background:rgba(0,0,0,0.6);
+flex:1;
+padding:20px;
+}
+
+h1{
+margin-bottom:20px;
+text-shadow:0 0 15px orange;
+}
+
+input,button{
+padding:10px;
+margin:5px;
+border:none;
+border-radius:8px;
+}
+
+button{
+background:orange;
+color:black;
+font-weight:bold;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+transform:scale(1.05);
+}
+
+.lista-times{
+margin-top:15px;
+}
+
+.partida{
+margin-top:20px;
+font-size:22px;
+font-weight:bold;
+}
+
+.timer{
+font-size:28px;
+margin-top:15px;
+color:#ffcc00;
+text-shadow:0 0 10px yellow;
+}
+
+.vencedor{
+animation:brilho 1s infinite alternate;
+}
+
+@keyframes brilho{
+from{text-shadow:0 0 5px white;}
+to{text-shadow:0 0 25px orange;}
+}
+
+.rodape{
+position:fixed;
+bottom:0;
+width:100%;
+text-align:center;
+padding:8px;
+background:rgba(0,0,0,0.7);
+font-size:14px;
+}
+
+.rodape span{
+color:#ff9800;
+font-weight:bold;
+text-shadow:0 0 10px orange;
+}
+
+#ranking div{
+margin:5px 0;
+}
+</style>
+</head>
+
+<body>
+
+<div class="overlay">
+
+<h1>🏐 Mix Play Web</h1>
+
+<!-- TELA DE CADASTRO -->
+<div id="cadastro">
+<input type="text" id="nomeTime" placeholder="Nome do Time">
+<button onclick="addTime()">Adicionar</button>
+<div class="lista-times" id="lista"></div>
+<button onclick="iniciar()">Iniciar Partidas</button>
+</div>
+
+<!-- TELA DE PARTIDAS -->
+<div id="partidas" style="display:none;">
+<div class="partida" id="jogo"></div>
+<div class="timer" id="timer">15:00</div>
+<button onclick="vencedor(1)">Time 1 venceu</button>
+<button onclick="vencedor(2)">Time 2 venceu</button>
+<button onclick="voltar()">Voltar</button>
+
+<h3 style="margin-top:20px;">🏆 Ranking de Vitórias</h3>
+<div id="ranking"></div>
+</div>
+
+</div>
+
+<footer class="rodape">
+Criado por <span>Murilo Pompeo</span>
+</footer>
+
+<audio id="torcida" src="https://www.soundjay.com/human/cheering-01.mp3"></audio>
+<audio id="fim" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
+<audio id="musica" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
 
 <script>
+// Dados do sistema
+let times=[];
+let vitorias={};
+let confrontos=[];
+let atual=[];
+let tempo=900;
+let intervalo;
 
-let times = [];
-let vitorias = {};
-let fila = [];
-let atual = [];
-let tempo = 900;
-let intervalo = null;
-let vencedorAtual = null;
-let streak = 0;
-
-const STORAGE_KEY = "mixplay_times";
-
-// ===== STORAGE =====
-function salvar(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    times: times,
-    vitorias: vitorias
-  }));
-}
-
-function carregar(){
-  let data = localStorage.getItem(STORAGE_KEY);
-  if(data){
-    try{
-      let obj = JSON.parse(data);
-      times = obj.times || [];
-      vitorias = obj.vitorias || {};
-    }catch(e){
-      times = [];
-      vitorias = {};
-    }
-  }
-}
-
-// ===== EMBARALHAR =====
-function embaralhar(array){
-  for(let i=array.length-1;i>0;i--){
-    let j=Math.floor(Math.random()*(i+1));
-    let temp=array[i];
-    array[i]=array[j];
-    array[j]=temp;
-  }
-}
-
-// ===== GERAR TODOS CONTRA TODOS =====
-function gerarFila(){
-  fila=[];
-  for(let i=0;i<times.length;i++){
-    for(let j=i+1;j<times.length;j++){
-      fila.push([times[i],times[j]]);
-    }
-  }
-  embaralhar(fila);
-}
-
-// ===== CADASTRO =====
+// ADICIONAR TIME
 function addTime(){
-  let nome=document.getElementById("nomeTime").value.trim();
-  if(nome!=="" && !times.includes(nome)){
-    times.push(nome);
-    vitorias[nome]=0;
-    document.getElementById("nomeTime").value="";
-    mostrarTimes();
-    atualizarRanking();
-    salvar();
-  }
+let nome=document.getElementById("nomeTime").value;
+if(nome.trim()!=""){
+times.push(nome);
+vitorias[nome]=0;
+document.getElementById("nomeTime").value="";
+mostrarTimes();
+atualizarRanking();
+}
 }
 
+// MOSTRAR TIMES CADASTRADOS
 function mostrarTimes(){
-  let lista=document.getElementById("lista");
-  lista.innerHTML="";
-  for(let i=0;i<times.length;i++){
-    lista.innerHTML+="<div>"+times[i]+" <button onclick='remover("+i+")'>X</button></div>";
-  }
+let lista=document.getElementById("lista");
+lista.innerHTML="";
+times.forEach((t,i)=>{
+lista.innerHTML+=`<div>${t} <button onclick="remover(${i})">X</button></div>`;
+});
 }
 
+// REMOVER TIME
 function remover(i){
-  let nome=times[i];
-  times.splice(i,1);
-  delete vitorias[nome];
-  mostrarTimes();
-  atualizarRanking();
-  salvar();
+let nomeRemovido = times[i];
+if(!confirm("Deseja excluir o time " + nomeRemovido + "?")) return;
+times.splice(i,1);
+delete vitorias[nomeRemovido];
+mostrarTimes();
+atualizarRanking();
 }
 
-// ===== INICIAR =====
+// INICIAR PARTIDAS
 function iniciar(){
-  if(times.length<2){
-    alert("Cadastre pelo menos 2 times");
-    return;
-  }
-  gerarFila();
-  document.getElementById("cadastro").style.display="none";
-  document.getElementById("partidas").style.display="block";
-  gerarPartida();
+if(times.length<2){alert("Cadastre pelo menos 2 times"); return;}
+document.getElementById("cadastro").style.display="none";
+document.getElementById("partidas").style.display="block";
+document.getElementById("musica").play();
+gerarPartida();
+atualizarRanking();
 }
 
-// ===== GERAR PARTIDA =====
+// VOLTAR PARA CADASTRO
+function voltar(){
+document.getElementById("cadastro").style.display="block";
+document.getElementById("partidas").style.display="none";
+clearInterval(intervalo);
+resetTimer();
+}
+
+// GERAR PARTIDA AUTOMÁTICA
 function gerarPartida(){
+if(confrontos.length >= (times.length*(times.length-1))/2){
+confrontos=[];
+}
+let t1,t2,comb;
+do{
+t1=Math.floor(Math.random()*times.length);
+t2=Math.floor(Math.random()*times.length);
+}while(t1==t2);
 
-  if(fila.length===0){
-    gerarFila();
-  }
-
-  if(streak>=2){
-    vencedorAtual=null;
-    streak=0;
-  }
-
-  let proxima=null;
-
-  if(vencedorAtual){
-    for(let i=0;i<fila.length;i++){
-      if(fila[i][0]===vencedorAtual || fila[i][1]===vencedorAtual){
-        proxima=fila.splice(i,1)[0];
-        break;
-      }
-    }
-  }
-
-  if(!proxima){
-    proxima=fila.shift();
-  }
-
-  atual=proxima;
-
-  document.getElementById("jogo").innerHTML=
-    atual[0]+" VS "+atual[1];
-
-  resetTimer();
+comb=[times[t1],times[t2]].sort().join("-");
+if(confrontos.includes(comb)){
+gerarPartida();
+return;
+}
+confrontos.push(comb);
+atual=[times[t1],times[t2]];
+document.getElementById("jogo").innerHTML=`${atual[0]} VS ${atual[1]}`;
+resetTimer();
 }
 
-// ===== VENCEDOR =====
+// REGISTRAR VENCEDOR
 function vencedor(num){
-
-  clearInterval(intervalo);
-
-  let nome=atual[num-1];
-  if(!nome) return;
-
-  vitorias[nome]++;
-  atualizarRanking();
-  salvar();
-
-  document.getElementById("jogo").innerHTML=
-    "🏆 <span class='vencedor'>"+nome+" venceu!</span>";
-
-  if(vencedorAtual===nome){
-    streak++;
-  }else{
-    vencedorAtual=nome;
-    streak=1;
-  }
-
-  setTimeout(function(){
-    gerarPartida();
-  },2000);
+clearInterval(intervalo);
+let nome=atual[num-1];
+vitorias[nome]++;
+document.getElementById("torcida").play();
+document.getElementById("jogo").innerHTML=`🏆 <span class="vencedor">${nome} venceu!</span>`;
+atualizarRanking();
+setTimeout(()=>{gerarPartida();},3000);
 }
 
-// ===== TIMER =====
+// CRONÔMETRO
 function resetTimer(){
-  tempo=900;
-  updateTimer();
-  clearInterval(intervalo);
-  intervalo=setInterval(function(){
-    tempo--;
-    updateTimer();
-    if(tempo<=0){
-      clearInterval(intervalo);
-      alert("Tempo esgotado!");
-    }
-  },1000);
+tempo=900;
+updateTimer();
+clearInterval(intervalo);
+intervalo=setInterval(()=>{
+tempo--;
+updateTimer();
+if(tempo<=0){
+clearInterval(intervalo);
+document.getElementById("fim").play();
+alert("Tempo esgotado!");
+}
+},1000);
 }
 
 function updateTimer(){
-  let min=Math.floor(tempo/60);
-  let seg=tempo%60;
-  document.getElementById("timer").innerText=
-    (min<10?"0":"")+min+":"+(seg<10?"0":"")+seg;
+let min=Math.floor(tempo/60);
+let seg=tempo%60;
+document.getElementById("timer").innerText=
+(min<10?"0":"")+min+":"+(seg<10?"0":"")+seg;
 }
 
-// ===== RANKING =====
+// ATUALIZAR RANKING
 function atualizarRanking(){
-  let ranking=document.getElementById("ranking");
-  ranking.innerHTML="";
-  let ordenado=Object.entries(vitorias).sort(function(a,b){
-    return b[1]-a[1];
-  });
-  for(let i=0;i<ordenado.length;i++){
-    ranking.innerHTML+="<div>"+(i+1)+"º - "+ordenado[i][0]+" ("+ordenado[i][1]+" vitórias)</div>";
-  }
+let rankingDiv = document.getElementById("ranking");
+rankingDiv.innerHTML="";
+let ordenado = Object.entries(vitorias).sort((a,b)=>b[1]-a[1]);
+ordenado.forEach(([nome,pontos],index)=>{
+rankingDiv.innerHTML+=`<div>${index+1}º - ${nome} (${pontos} vitórias)</div>`;
+});
 }
 
-// ===== INIT =====
-carregar();
+// INICIALIZA LISTA
 mostrarTimes();
 atualizarRanking();
 
 </script>
+
+</body>
+</html>
