@@ -1,4 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rei da Quadra - Rota77</title>
+
+<style>
+body{
+font-family: Arial, sans-serif;
+background:#111;
+color:white;
+text-align:center;
+margin:0;
+padding:20px;
+}
+
+h1{
+color:#FFD700;
+}
+
+input{
+padding:8px;
+border-radius:5px;
+border:none;
+}
+
+button{
+padding:8px 12px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+margin:5px;
+font-weight:bold;
+}
+
+.addBtn{background:#00c853;color:white;}
+.winBtn{background:#FFD600;color:black;}
+.deleteBtn{background:#d50000;color:white;}
+
+.teamItem{
+display:flex;
+justify-content:space-between;
+align-items:center;
+background:#222;
+padding:8px;
+margin:5px auto;
+width:90%;
+border-radius:5px;
+}
+
+#match{
+font-size:22px;
+margin:20px 0;
+color:#00e5ff;
+}
+
+#timer{
+font-size:20px;
+margin:10px 0;
+}
+
+ul{
+list-style:none;
+padding:0;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🏐 Rei da Quadra - Rota77</h1>
+
+<input type="text" id="teamInput" placeholder="Nome do time">
+<button class="addBtn" onclick="addTeam()">Adicionar</button>
+
+<h2>Times</h2>
+<div id="teamList"></div>
+
+<h2>Partida Atual</h2>
+<div id="match">Aguardando times...</div>
+<div id="timer">00:00</div>
+
+<button class="winBtn" onclick="setWinner(1)">Vitória Time 1</button>
+<button class="winBtn" onclick="setWinner(2)">Vitória Time 2</button>
+
+<h2>Ranking</h2>
+<ul id="ranking"></ul>
+
+<audio id="crowd" src="https://www.soundjay.com/human/applause-8.mp3"></audio>
+
 <script>
+
 let teams = JSON.parse(localStorage.getItem("teams")) || [];
 let wins = JSON.parse(localStorage.getItem("wins")) || {};
 let currentMatch = JSON.parse(localStorage.getItem("currentMatch")) || [];
@@ -33,8 +125,13 @@ generateMatch();
 function removeTeam(name){
 teams=teams.filter(t=>t!==name);
 delete wins[name];
+
 if(currentMatch.includes(name)) currentMatch=[];
-if(champion===name){ champion=null; streak=0; }
+if(champion===name){
+champion=null;
+streak=0;
+}
+
 save();
 renderTeams();
 updateRanking();
@@ -44,16 +141,29 @@ generateMatch();
 function renderTeams(){
 let list=document.getElementById("teamList");
 list.innerHTML="";
+
 teams.forEach(team=>{
 let div=document.createElement("div");
 div.className="teamItem";
-div.innerHTML=`${team}
-<button class="deleteBtn" onclick="removeTeam('${team}')">Excluir</button>`;
+
+let span=document.createElement("span");
+span.innerText=team;
+
+let btn=document.createElement("button");
+btn.className="deleteBtn";
+btn.innerText="Excluir";
+btn.onclick=function(){
+removeTeam(team);
+};
+
+div.appendChild(span);
+div.appendChild(btn);
 list.appendChild(div);
 });
 }
 
 function generateMatch(){
+
 if(teams.length<2){
 document.getElementById("match").innerText="Aguardando times...";
 return;
@@ -65,6 +175,7 @@ let opponent=opponents[Math.floor(Math.random()*opponents.length)];
 currentMatch=[champion,opponent];
 }
 else{
+
 let pool=[...teams];
 
 if(champion && streak>=2){
@@ -77,16 +188,20 @@ let shuffled=pool.sort(()=>0.5-Math.random());
 currentMatch=[shuffled[0],shuffled[1]];
 }
 
-document.getElementById("match").innerText=currentMatch[0]+" VS "+currentMatch[1];
+document.getElementById("match").innerText=
+currentMatch[0]+" VS "+currentMatch[1];
+
 resetTimer();
 save();
 }
 
 function setWinner(pos){
+
 if(currentMatch.length<2) return;
 
 let winner=currentMatch[pos-1];
 wins[winner]=(wins[winner]||0)+1;
+
 document.getElementById("crowd").play();
 
 if(champion===winner){
@@ -104,7 +219,7 @@ currentMatch=[];
 save();
 updateRanking();
 generateMatch();
-},1500);
+},1200);
 }
 else{
 setTimeout(()=>{
@@ -112,7 +227,7 @@ currentMatch=[];
 save();
 updateRanking();
 generateMatch();
-},1500);
+},1200);
 }
 }
 
@@ -143,4 +258,8 @@ document.getElementById("timer").innerText=
 renderTeams();
 updateRanking();
 generateMatch();
+
 </script>
+
+</body>
+</html>
