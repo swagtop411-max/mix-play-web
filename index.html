@@ -6,13 +6,7 @@
 <title>Mix Play Web PRO</title>
 
 <style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial, sans-serif;
-}
-
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial;}
 body{
 min-height:100vh;
 background:url('file_000000009aac71f5a38536be785d2478.png') no-repeat center center fixed;
@@ -22,7 +16,6 @@ justify-content:center;
 align-items:center;
 padding:20px;
 }
-
 .container{
 width:100%;
 max-width:500px;
@@ -31,12 +24,7 @@ padding:25px;
 border-radius:20px;
 text-align:center;
 }
-
-h1{
-color:white;
-margin-bottom:20px;
-}
-
+h1{color:white;margin-bottom:20px;}
 button{
 width:100%;
 padding:14px;
@@ -47,12 +35,10 @@ font-weight:bold;
 cursor:pointer;
 margin-bottom:10px;
 }
-
-.btn-gold{ background:#ffb300; color:black; }
-.btn-green{ background:#00c853; color:white; }
-.btn-red{ background:#d50000; color:white; }
-.btn-blue{ background:#2962ff; color:white; }
-
+.btn-gold{background:#ffb300;color:black;}
+.btn-green{background:#00c853;color:white;}
+.btn-red{background:#d50000;color:white;}
+.btn-blue{background:#2962ff;color:white;}
 input{
 width:100%;
 padding:14px;
@@ -61,9 +47,7 @@ border:none;
 margin-bottom:12px;
 font-size:16px;
 }
-
-.hidden{ display:none; }
-
+.hidden{display:none;}
 .team-card{
 background:#1c1c1c;
 padding:12px;
@@ -74,21 +58,18 @@ justify-content:space-between;
 align-items:center;
 color:white;
 }
-
 .match-box{
 background:#1c1c1c;
 padding:20px;
 border-radius:15px;
 margin-bottom:15px;
 }
-
 .timer{
 font-size:32px;
 font-weight:bold;
 color:#00e676;
 margin-bottom:15px;
 }
-
 .scoreboard{
 display:flex;
 justify-content:center;
@@ -101,28 +82,15 @@ background:#111;
 padding:12px;
 border-radius:12px;
 }
-
-.scoreboard span{
-flex:1;
-text-align:center;
-}
-
-.vs{
-color:#ffb300;
-}
-
+.scoreboard span{flex:1;text-align:center;}
+.vs{color:#ffb300;}
 .ranking-item{
 display:flex;
 justify-content:space-between;
 color:white;
 padding:6px 0;
 }
-
-.footer{
-margin-top:15px;
-color:#ffb300;
-font-weight:bold;
-}
+.footer{margin-top:15px;color:#ffb300;font-weight:bold;}
 </style>
 </head>
 
@@ -130,30 +98,21 @@ font-weight:bold;
 
 <div class="container">
 
-<!-- PAGINA INICIAL -->
 <div id="paginaInicial">
 <h1>🏐 Mix Play Web PRO</h1>
 <button class="btn-gold" onclick="desbloquear()">Desbloquear App</button>
-<p style="color:white;margin-top:10px;">
-Após desbloquear, você poderá cadastrar times e gerar partidas.
-</p>
 <div class="footer">Criado por Murilo Pompeo</div>
 </div>
 
-<!-- CADASTRO -->
 <div id="paginaCadastro" class="hidden">
 <h1>Cadastro de Times</h1>
-
 <input type="text" id="nomeTime" placeholder="Nome do Time">
 <button class="btn-green" onclick="adicionarTime()">Adicionar Time</button>
-
 <div id="listaTimes"></div>
-
 <button class="btn-blue" onclick="irParaPartidas()">Ir para Partidas</button>
 <button class="btn-red" onclick="voltarInicio()">Voltar</button>
 </div>
 
-<!-- PARTIDAS -->
 <div id="paginaPartidas" class="hidden">
 <h1>Partidas</h1>
 
@@ -184,8 +143,8 @@ let ranking = JSON.parse(localStorage.getItem("ranking")) || {};
 
 let fila = [];
 let atual = [];
-let ultimoVencedor = null;
-let vitoriasSeguidas = 0;
+let campeaoAtual = null;
+let sequencia = 0;
 
 let tempo=0;
 let intervalo=null;
@@ -238,7 +197,7 @@ function irParaPartidas(){
 if(times.length<2)return alert("Cadastre pelo menos 2 times");
 fila=[...times];
 embaralhar(fila);
-gerarPartida();
+gerarPartidaInicial();
 paginaCadastro.classList.add("hidden");
 paginaPartidas.classList.remove("hidden");
 atualizarRanking();
@@ -249,46 +208,57 @@ paginaPartidas.classList.add("hidden");
 paginaCadastro.classList.remove("hidden");
 }
 
-function gerarPartida(){
-
-if(fila.length<2){
-fila=[...times];
-embaralhar(fila);
-}
-
+function gerarPartidaInicial(){
 atual=[fila.shift(),fila.shift()];
-
 time1Nome.innerText=atual[0];
 time2Nome.innerText=atual[1];
-
 resetarCronometro();
 }
 
 function definirVencedor(index){
 
-const vencedor = atual[index];
+let vencedor = atual[index];
+let perdedor = atual[index===0?1:0];
+
 ranking[vencedor]++;
-
-if(ultimoVencedor === vencedor){
-vitoriasSeguidas++;
-}else{
-vitoriasSeguidas = 1;
-}
-
-if(vitoriasSeguidas === 1){
-// joga novamente
-fila.unshift(vencedor);
-ultimoVencedor = vencedor;
-}
-else if(vitoriasSeguidas === 2){
-// obrigatoriamente sai
-vitoriasSeguidas = 0;
-ultimoVencedor = null;
-}
-
 salvar();
+
+if(campeaoAtual === vencedor){
+sequencia++;
+}else{
+sequencia=1;
+campeaoAtual=vencedor;
+}
+
+if(sequencia === 1){
+// joga novamente
+let proximo = pegarProximo(perdedor);
+atual=[vencedor,proximo];
+}
+else{
+// saiu obrigatoriamente
+sequencia=0;
+campeaoAtual=null;
+atual=[...pegarDoisNovos()];
+}
+
+time1Nome.innerText=atual[0];
+time2Nome.innerText=atual[1];
+
 atualizarRanking();
-gerarPartida();
+resetarCronometro();
+}
+
+function pegarProximo(excluir){
+let disponiveis=times.filter(t=>t!==excluir && t!==campeaoAtual);
+if(disponiveis.length===0) disponiveis=times.filter(t=>t!==excluir);
+return disponiveis[Math.floor(Math.random()*disponiveis.length)];
+}
+
+function pegarDoisNovos(){
+let copia=[...times];
+embaralhar(copia);
+return [copia[0],copia[1]];
 }
 
 function atualizarRanking(){
@@ -315,11 +285,11 @@ function iniciarCronometro(){
 clearInterval(intervalo);
 intervalo=setInterval(()=>{
 tempo++;
-let minutos=Math.floor(tempo/60);
-let segundos=tempo%60;
+let m=Math.floor(tempo/60);
+let s=tempo%60;
 cronometro.innerText=
-String(minutos).padStart(2,"0")+":"+
-String(segundos).padStart(2,"0");
+String(m).padStart(2,"0")+":"+
+String(s).padStart(2,"0");
 },1000);
 }
 
