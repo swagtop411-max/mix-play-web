@@ -3,103 +3,114 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gerador de Partidas</title>
+<title>Mix Play Web PRO</title>
 
 <style>
-* {
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family: Arial, sans-serif;
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial, sans-serif;
 }
 
-body {
-    min-height:100vh;
-    background: url('file_000000009aac71f5a38536be785d2478.png') no-repeat center center fixed;
-    background-size: cover;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    padding:20px;
+body{
+min-height:100vh;
+background:url('file_000000009aac71f5a38536be785d2478.png') no-repeat center center fixed;
+background-size:cover;
+display:flex;
+justify-content:center;
+align-items:center;
+padding:20px;
 }
 
-.container {
-    width:100%;
-    max-width:500px;
-    background:rgba(0,0,0,0.85);
-    padding:25px;
-    border-radius:20px;
+.container{
+width:100%;
+max-width:500px;
+background:rgba(0,0,0,0.85);
+padding:25px;
+border-radius:20px;
+text-align:center;
 }
 
-h1 {
-    text-align:center;
-    color:white;
-    margin-bottom:20px;
-    font-size:28px;
+h1{
+color:white;
+margin-bottom:20px;
 }
 
-input {
-    width:100%;
-    padding:14px;
-    border-radius:10px;
-    border:none;
-    margin-bottom:12px;
-    font-size:16px;
+button{
+width:100%;
+padding:14px;
+border:none;
+border-radius:10px;
+font-size:16px;
+font-weight:bold;
+cursor:pointer;
+margin-bottom:10px;
 }
 
-button {
-    width:100%;
-    padding:14px;
-    border:none;
-    border-radius:10px;
-    font-size:16px;
-    font-weight:bold;
-    cursor:pointer;
-    margin-bottom:10px;
+.btn-gold{
+background:#ffb300;
+color:black;
 }
 
-.btn-green {
-    background:#00c853;
-    color:white;
+.btn-green{
+background:#00c853;
+color:white;
 }
 
-.btn-red {
-    background:#d50000;
-    color:white;
+.btn-red{
+background:#d50000;
+color:white;
 }
 
-.btn-blue {
-    background:#2962ff;
-    color:white;
+.btn-blue{
+background:#2962ff;
+color:white;
 }
 
-.team-card {
-    background:#1c1c1c;
-    padding:12px;
-    border-radius:12px;
-    margin-bottom:10px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+input{
+width:100%;
+padding:14px;
+border-radius:10px;
+border:none;
+margin-bottom:12px;
+font-size:16px;
 }
 
-.hidden {
-    display:none;
+.hidden{
+display:none;
 }
 
-.match-box {
-    background:#1c1c1c;
-    padding:15px;
-    border-radius:15px;
-    text-align:center;
-    margin-bottom:15px;
+.team-card{
+background:#1c1c1c;
+padding:12px;
+border-radius:12px;
+margin-bottom:10px;
+display:flex;
+justify-content:space-between;
+align-items:center;
 }
 
-.ranking-item {
-    display:flex;
-    justify-content:space-between;
-    padding:6px 0;
-    color:white;
+.match-box{
+background:#1c1c1c;
+padding:15px;
+border-radius:15px;
+margin-bottom:15px;
+color:white;
+font-size:20px;
+}
+
+.ranking-item{
+display:flex;
+justify-content:space-between;
+color:white;
+padding:6px 0;
+}
+
+.footer{
+margin-top:15px;
+color:#ffb300;
+font-weight:bold;
 }
 </style>
 </head>
@@ -108,8 +119,18 @@ button {
 
 <div class="container">
 
-<!-- PAGINA 1 -->
-<div id="paginaCadastro">
+<!-- PAGINA INICIAL -->
+<div id="paginaInicial">
+<h1>🏐 Mix Play Web PRO</h1>
+<button class="btn-gold" onclick="desbloquear()">Desbloquear App</button>
+<p style="color:white;margin-top:10px;">
+Após desbloquear, você poderá cadastrar times e gerar partidas.
+</p>
+<div class="footer">Criado por Murilo Pompeo</div>
+</div>
+
+<!-- PAGINA CADASTRO -->
+<div id="paginaCadastro" class="hidden">
 
 <h1>Cadastro de Times</h1>
 
@@ -119,33 +140,28 @@ button {
 <div id="listaTimes"></div>
 
 <button class="btn-blue" onclick="irParaPartidas()">Ir para Partidas</button>
+<button class="btn-red" onclick="voltarInicio()">Voltar</button>
 
 </div>
 
-<!-- PAGINA 2 -->
+<!-- PAGINA PARTIDAS -->
 <div id="paginaPartidas" class="hidden">
 
 <h1>Partidas</h1>
 
-<div class="match-box">
-    <h2 id="confronto">---</h2>
-</div>
+<div class="match-box" id="confronto">---</div>
 
-<button class="btn-green" onclick="definirVencedor(1)">Time 1 Venceu</button>
-<button class="btn-green" onclick="definirVencedor(2)">Time 2 Venceu</button>
+<button class="btn-green" onclick="definirVencedor(0)">Time 1 Venceu</button>
+<button class="btn-green" onclick="definirVencedor(1)">Time 2 Venceu</button>
 
 <h2 style="color:white;margin-top:15px;">Ranking</h2>
 <div id="ranking"></div>
 
-<button class="btn-blue" onclick="voltarCadastro()">Voltar</button>
+<button class="btn-red" onclick="voltarCadastro()">Voltar</button>
 
 </div>
 
 </div>
-
-<audio id="musica" loop>
-<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_5e4c8c0c1e.mp3" type="audio/mpeg">
-</audio>
 
 <script>
 
@@ -154,104 +170,116 @@ let ranking = JSON.parse(localStorage.getItem("ranking")) || {};
 let fila = [];
 let atual = [];
 let vitoriasSeguidas = 0;
+let ultimoVencedor = null;
 
-function salvarDados() {
-    localStorage.setItem("times", JSON.stringify(times));
-    localStorage.setItem("ranking", JSON.stringify(ranking));
+function salvar(){
+localStorage.setItem("times",JSON.stringify(times));
+localStorage.setItem("ranking",JSON.stringify(ranking));
 }
 
-function adicionarTime() {
-    const nome = document.getElementById("nomeTime").value.trim();
-    if (!nome) return;
-
-    times.push(nome);
-    ranking[nome] = ranking[nome] || 0;
-
-    document.getElementById("nomeTime").value = "";
-    salvarDados();
-    renderizarTimes();
+function desbloquear(){
+document.getElementById("paginaInicial").classList.add("hidden");
+document.getElementById("paginaCadastro").classList.remove("hidden");
 }
 
-function excluirTime(index) {
-    delete ranking[times[index]];
-    times.splice(index,1);
-    salvarDados();
-    renderizarTimes();
+function voltarInicio(){
+document.getElementById("paginaCadastro").classList.add("hidden");
+document.getElementById("paginaInicial").classList.remove("hidden");
 }
 
-function renderizarTimes() {
-    const lista = document.getElementById("listaTimes");
-    lista.innerHTML = "";
-
-    times.forEach((time,index)=>{
-        lista.innerHTML += `
-        <div class="team-card">
-            <span style="color:white">${time}</span>
-            <button class="btn-red" style="width:auto;padding:6px 12px;font-size:13px"
-            onclick="excluirTime(${index})">Excluir</button>
-        </div>`;
-    });
+function adicionarTime(){
+const nome=document.getElementById("nomeTime").value.trim();
+if(!nome)return;
+times.push(nome);
+ranking[nome]=ranking[nome]||0;
+document.getElementById("nomeTime").value="";
+salvar();
+renderizarTimes();
 }
 
-function irParaPartidas() {
-    if (times.length < 2) return alert("Cadastre pelo menos 2 times");
-    fila = [...times];
-    embaralhar(fila);
-    gerarPartida();
-    document.getElementById("paginaCadastro").classList.add("hidden");
-    document.getElementById("paginaPartidas").classList.remove("hidden");
-    document.getElementById("musica").play();
+function excluirTime(i){
+delete ranking[times[i]];
+times.splice(i,1);
+salvar();
+renderizarTimes();
 }
 
-function voltarCadastro() {
-    document.getElementById("paginaCadastro").classList.remove("hidden");
-    document.getElementById("paginaPartidas").classList.add("hidden");
+function renderizarTimes(){
+const lista=document.getElementById("listaTimes");
+lista.innerHTML="";
+times.forEach((t,i)=>{
+lista.innerHTML+=`
+<div class="team-card">
+<span style="color:white">${t}</span>
+<button class="btn-red" style="width:auto;padding:6px 12px;font-size:13px"
+onclick="excluirTime(${i})">Excluir</button>
+</div>`;
+});
 }
 
-function gerarPartida() {
-    if (fila.length < 2) fila = [...times];
-
-    atual = [fila.shift(), fila.shift()];
-    document.getElementById("confronto").innerText =
-        atual[0] + " VS " + atual[1];
+function irParaPartidas(){
+if(times.length<2)return alert("Cadastre pelo menos 2 times");
+fila=[...times];
+embaralhar(fila);
+gerarPartida();
+document.getElementById("paginaCadastro").classList.add("hidden");
+document.getElementById("paginaPartidas").classList.remove("hidden");
 }
 
-function definirVencedor(num) {
-    const vencedor = atual[num-1];
-    ranking[vencedor]++;
-    salvarDados();
-
-    if (vitoriasSeguidas === 0) {
-        vitoriasSeguidas = 1;
-        fila.unshift(vencedor);
-    } else {
-        vitoriasSeguidas = 0;
-    }
-
-    atualizarRanking();
-    gerarPartida();
+function voltarCadastro(){
+document.getElementById("paginaPartidas").classList.add("hidden");
+document.getElementById("paginaCadastro").classList.remove("hidden");
 }
 
-function atualizarRanking() {
-    const div = document.getElementById("ranking");
-    div.innerHTML = "";
-
-    Object.entries(ranking)
-    .sort((a,b)=>b[1]-a[1])
-    .forEach(([time,pontos])=>{
-        div.innerHTML += `
-        <div class="ranking-item">
-            <span>${time}</span>
-            <span>${pontos} vitórias</span>
-        </div>`;
-    });
+function gerarPartida(){
+if(fila.length<2)fila=[...times];
+atual=[fila.shift(),fila.shift()];
+document.getElementById("confronto").innerText=atual[0]+" VS "+atual[1];
 }
 
-function embaralhar(array) {
-    for (let i = array.length -1; i>0; i--) {
-        const j = Math.floor(Math.random()*(i+1));
-        [array[i],array[j]]=[array[j],array[i]];
-    }
+function definirVencedor(index){
+
+const vencedor=atual[index];
+ranking[vencedor]++;
+salvar();
+
+if(ultimoVencedor===vencedor){
+vitoriasSeguidas++;
+}else{
+vitoriasSeguidas=1;
+}
+
+if(vitoriasSeguidas===1){
+fila.unshift(vencedor);
+ultimoVencedor=vencedor;
+}else{
+vitoriasSeguidas=0;
+ultimoVencedor=null;
+}
+
+atualizarRanking();
+gerarPartida();
+}
+
+function atualizarRanking(){
+const div=document.getElementById("ranking");
+div.innerHTML="";
+Object.entries(ranking)
+.sort((a,b)=>b[1]-a[1])
+.forEach(([t,p])=>{
+div.innerHTML+=`
+<div class="ranking-item">
+<span>${t}</span>
+<span>${p} vitórias</span>
+</div>`;
+});
+}
+
+function embaralhar(arr){
+for(let i=arr.length-1;i>0;i--){
+const j=Math.floor(Math.random()*(i+1));
+[arr[i],arr[j]]=[arr[j],arr[i]];
+}
 }
 
 renderizarTimes();
