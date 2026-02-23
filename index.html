@@ -48,25 +48,10 @@ cursor:pointer;
 margin-bottom:10px;
 }
 
-.btn-gold{
-background:#ffb300;
-color:black;
-}
-
-.btn-green{
-background:#00c853;
-color:white;
-}
-
-.btn-red{
-background:#d50000;
-color:white;
-}
-
-.btn-blue{
-background:#2962ff;
-color:white;
-}
+.btn-gold{ background:#ffb300; color:black; }
+.btn-green{ background:#00c853; color:white; }
+.btn-red{ background:#d50000; color:white; }
+.btn-blue{ background:#2962ff; color:white; }
 
 input{
 width:100%;
@@ -77,9 +62,7 @@ margin-bottom:12px;
 font-size:16px;
 }
 
-.hidden{
-display:none;
-}
+.hidden{ display:none; }
 
 .team-card{
 background:#1c1c1c;
@@ -89,15 +72,45 @@ margin-bottom:10px;
 display:flex;
 justify-content:space-between;
 align-items:center;
+color:white;
 }
 
 .match-box{
 background:#1c1c1c;
-padding:15px;
+padding:20px;
 border-radius:15px;
 margin-bottom:15px;
-color:white;
+}
+
+.timer{
+font-size:32px;
+font-weight:bold;
+color:#00e676;
+margin-bottom:15px;
+letter-spacing:2px;
+}
+
+.scoreboard{
+display:flex;
+justify-content:center;
+align-items:center;
+gap:10px;
 font-size:20px;
+font-weight:bold;
+color:white;
+background:#111;
+padding:12px;
+border-radius:12px;
+}
+
+.scoreboard span{
+flex:1;
+text-align:center;
+}
+
+.vs{
+color:#ffb300;
+font-size:18px;
 }
 
 .ranking-item{
@@ -131,7 +144,6 @@ Após desbloquear, você poderá cadastrar times e gerar partidas.
 
 <!-- PAGINA CADASTRO -->
 <div id="paginaCadastro" class="hidden">
-
 <h1>Cadastro de Times</h1>
 
 <input type="text" id="nomeTime" placeholder="Nome do Time">
@@ -141,15 +153,20 @@ Após desbloquear, você poderá cadastrar times e gerar partidas.
 
 <button class="btn-blue" onclick="irParaPartidas()">Ir para Partidas</button>
 <button class="btn-red" onclick="voltarInicio()">Voltar</button>
-
 </div>
 
 <!-- PAGINA PARTIDAS -->
 <div id="paginaPartidas" class="hidden">
-
 <h1>Partidas</h1>
 
-<div class="match-box" id="confronto">---</div>
+<div class="match-box">
+<div class="timer" id="cronometro">00:00</div>
+<div class="scoreboard">
+<span id="time1Nome">---</span>
+<span class="vs">VS</span>
+<span id="time2Nome">---</span>
+</div>
+</div>
 
 <button class="btn-green" onclick="definirVencedor(0)">Time 1 Venceu</button>
 <button class="btn-green" onclick="definirVencedor(1)">Time 2 Venceu</button>
@@ -157,8 +174,7 @@ Após desbloquear, você poderá cadastrar times e gerar partidas.
 <h2 style="color:white;margin-top:15px;">Ranking</h2>
 <div id="ranking"></div>
 
-<button class="btn-red" onclick="voltarCadastro()">Voltar</button>
-
+<button class="btn-blue" onclick="voltarCadastro()">Voltar</button>
 </div>
 
 </div>
@@ -172,27 +188,30 @@ let atual = [];
 let vitoriasSeguidas = 0;
 let ultimoVencedor = null;
 
+let tempo=0;
+let intervalo=null;
+
 function salvar(){
 localStorage.setItem("times",JSON.stringify(times));
 localStorage.setItem("ranking",JSON.stringify(ranking));
 }
 
 function desbloquear(){
-document.getElementById("paginaInicial").classList.add("hidden");
-document.getElementById("paginaCadastro").classList.remove("hidden");
+paginaInicial.classList.add("hidden");
+paginaCadastro.classList.remove("hidden");
 }
 
 function voltarInicio(){
-document.getElementById("paginaCadastro").classList.add("hidden");
-document.getElementById("paginaInicial").classList.remove("hidden");
+paginaCadastro.classList.add("hidden");
+paginaInicial.classList.remove("hidden");
 }
 
 function adicionarTime(){
-const nome=document.getElementById("nomeTime").value.trim();
+const nome=nomeTime.value.trim();
 if(!nome)return;
 times.push(nome);
 ranking[nome]=ranking[nome]||0;
-document.getElementById("nomeTime").value="";
+nomeTime.value="";
 salvar();
 renderizarTimes();
 }
@@ -205,12 +224,11 @@ renderizarTimes();
 }
 
 function renderizarTimes(){
-const lista=document.getElementById("listaTimes");
-lista.innerHTML="";
+listaTimes.innerHTML="";
 times.forEach((t,i)=>{
-lista.innerHTML+=`
+listaTimes.innerHTML+=`
 <div class="team-card">
-<span style="color:white">${t}</span>
+<span>${t}</span>
 <button class="btn-red" style="width:auto;padding:6px 12px;font-size:13px"
 onclick="excluirTime(${i})">Excluir</button>
 </div>`;
@@ -222,19 +240,21 @@ if(times.length<2)return alert("Cadastre pelo menos 2 times");
 fila=[...times];
 embaralhar(fila);
 gerarPartida();
-document.getElementById("paginaCadastro").classList.add("hidden");
-document.getElementById("paginaPartidas").classList.remove("hidden");
+paginaCadastro.classList.add("hidden");
+paginaPartidas.classList.remove("hidden");
 }
 
 function voltarCadastro(){
-document.getElementById("paginaPartidas").classList.add("hidden");
-document.getElementById("paginaCadastro").classList.remove("hidden");
+paginaPartidas.classList.add("hidden");
+paginaCadastro.classList.remove("hidden");
 }
 
 function gerarPartida(){
-if(fila.length<2)fila=[...times];
+if(fila.length<2) fila=[...times];
 atual=[fila.shift(),fila.shift()];
-document.getElementById("confronto").innerText=atual[0]+" VS "+atual[1];
+time1Nome.innerText=atual[0];
+time2Nome.innerText=atual[1];
+resetarCronometro();
 }
 
 function definirVencedor(index){
@@ -262,12 +282,12 @@ gerarPartida();
 }
 
 function atualizarRanking(){
-const div=document.getElementById("ranking");
-div.innerHTML="";
+rankingDiv="";
+ranking.innerHTML="";
 Object.entries(ranking)
 .sort((a,b)=>b[1]-a[1])
 .forEach(([t,p])=>{
-div.innerHTML+=`
+ranking.innerHTML+=`
 <div class="ranking-item">
 <span>${t}</span>
 <span>${p} vitórias</span>
@@ -280,6 +300,24 @@ for(let i=arr.length-1;i>0;i--){
 const j=Math.floor(Math.random()*(i+1));
 [arr[i],arr[j]]=[arr[j],arr[i]];
 }
+}
+
+function iniciarCronometro(){
+clearInterval(intervalo);
+intervalo=setInterval(()=>{
+tempo++;
+let minutos=Math.floor(tempo/60);
+let segundos=tempo%60;
+cronometro.innerText=
+String(minutos).padStart(2,"0")+":"+
+String(segundos).padStart(2,"0");
+},1000);
+}
+
+function resetarCronometro(){
+tempo=0;
+cronometro.innerText="00:00";
+iniciarCronometro();
 }
 
 renderizarTimes();
