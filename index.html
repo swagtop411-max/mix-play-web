@@ -3,47 +3,115 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mix Play Web</title>
+<title>Mix Play Web - Beach Edition</title>
 
 <style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+
 body{
-background:black;
+background-image:url("file_000000009aac71f5a38536be785d2478.png");
+background-size:cover;
+background-position:center;
+background-repeat:no-repeat;
+background-attachment:fixed;
 color:white;
-font-family:Arial;
-text-align:center;
-padding:20px;
+min-height:100vh;
 }
-button{
+
+.overlay{
+background:rgba(0,0,0,0.65);
+min-height:100vh;
+padding:20px;
+text-align:center;
+}
+
+h1{
+margin-bottom:20px;
+text-shadow:0 0 15px orange;
+}
+
+input,button{
 padding:10px;
 margin:5px;
+border:none;
+border-radius:8px;
 }
+
+button{
+background:orange;
+color:black;
+font-weight:bold;
+cursor:pointer;
+}
+
+button:hover{
+transform:scale(1.05);
+}
+
+.partida{
+margin-top:20px;
+font-size:22px;
+font-weight:bold;
+}
+
+.timer{
+font-size:28px;
+margin-top:15px;
+color:#ffcc00;
+text-shadow:0 0 10px yellow;
+}
+
 .vencedor{
 color:yellow;
 font-weight:bold;
+font-size:24px;
+}
+
+#ranking div{
+margin:5px 0;
+}
+
+footer{
+position:fixed;
+bottom:0;
+width:100%;
+text-align:center;
+padding:8px;
+background:rgba(0,0,0,0.7);
+font-size:14px;
 }
 </style>
 </head>
+
 <body>
 
-<h1>Mix Play Web</h1>
+<div class="overlay">
+
+<h1>🏐 Mix Play Web</h1>
 
 <div id="cadastro">
 <input type="text" id="nomeTime" placeholder="Nome do Time">
 <button onclick="addTime()">Adicionar</button>
 <div id="lista"></div>
-<button onclick="iniciar()">Iniciar</button>
+<button onclick="iniciar()">Iniciar Partidas</button>
 </div>
 
 <div id="partidas" style="display:none;">
-<div id="jogo"></div>
-<div id="timer">15:00</div>
+<div class="partida" id="jogo"></div>
+<div class="timer" id="timer">15:00</div>
 <button onclick="vencedor(1)">Time 1 venceu</button>
 <button onclick="vencedor(2)">Time 2 venceu</button>
 <button onclick="voltar()">Voltar</button>
 
-<h3>Ranking</h3>
+<h3 style="margin-top:20px;">🏆 Ranking</h3>
 <div id="ranking"></div>
 </div>
+
+</div>
+
+<footer>
+Criado por Murilo Pompeo
+</footer>
 
 <script>
 
@@ -56,20 +124,29 @@ let intervalo=null;
 let vencedorAtual=null;
 let streak=0;
 
+const STORAGE_KEY="mixplay_storage";
+
+// ===== STORAGE =====
 function salvar(){
-localStorage.setItem("mixplay",
+localStorage.setItem(STORAGE_KEY,
 JSON.stringify({times:times,vitorias:vitorias}));
 }
 
 function carregar(){
-let data=localStorage.getItem("mixplay");
+let data=localStorage.getItem(STORAGE_KEY);
 if(data){
+try{
 let obj=JSON.parse(data);
 times=obj.times||[];
 vitorias=obj.vitorias||{};
+}catch(e){
+times=[];
+vitorias={};
+}
 }
 }
 
+// ===== EMBARALHAR =====
 function embaralhar(array){
 for(let i=array.length-1;i>0;i--){
 let j=Math.floor(Math.random()*(i+1));
@@ -79,6 +156,7 @@ array[j]=temp;
 }
 }
 
+// ===== GERAR TODOS CONTRA TODOS =====
 function gerarFila(){
 fila=[];
 for(let i=0;i<times.length;i++){
@@ -89,6 +167,7 @@ fila.push([times[i],times[j]]);
 embaralhar(fila);
 }
 
+// ===== CADASTRO =====
 function addTime(){
 let nome=document.getElementById("nomeTime").value.trim();
 if(nome!=="" && !times.includes(nome)){
@@ -109,6 +188,7 @@ lista.innerHTML+="<div>"+times[i]+"</div>";
 }
 }
 
+// ===== INICIAR =====
 function iniciar(){
 if(times.length<2){
 alert("Cadastre pelo menos 2 times");
@@ -120,6 +200,7 @@ document.getElementById("partidas").style.display="block";
 gerarPartida();
 }
 
+// ===== GERAR PARTIDA =====
 function gerarPartida(){
 
 if(fila.length===0){
@@ -154,6 +235,7 @@ atual[0]+" VS "+atual[1];
 resetTimer();
 }
 
+// ===== VENCEDOR =====
 function vencedor(num){
 
 clearInterval(intervalo);
@@ -180,6 +262,7 @@ gerarPartida();
 },2000);
 }
 
+// ===== TIMER =====
 function resetTimer(){
 tempo=900;
 updateTimer();
@@ -189,7 +272,7 @@ tempo--;
 updateTimer();
 if(tempo<=0){
 clearInterval(intervalo);
-alert("Tempo esgotado");
+alert("Tempo esgotado!");
 }
 },1000);
 }
@@ -201,6 +284,7 @@ document.getElementById("timer").innerHTML=
 (min<10?"0":"")+min+":"+(seg<10?"0":"")+seg;
 }
 
+// ===== RANKING =====
 function atualizarRanking(){
 let r=document.getElementById("ranking");
 r.innerHTML="";
@@ -208,16 +292,18 @@ let ordenado=Object.entries(vitorias).sort(function(a,b){
 return b[1]-a[1];
 });
 for(let i=0;i<ordenado.length;i++){
-r.innerHTML+=(i+1)+"º - "+ordenado[i][0]+" ("+ordenado[i][1]+")<br>";
+r.innerHTML+=(i+1)+"º - "+ordenado[i][0]+" ("+ordenado[i][1]+" vitórias)<br>";
 }
 }
 
+// ===== VOLTAR =====
 function voltar(){
 clearInterval(intervalo);
 document.getElementById("cadastro").style.display="block";
 document.getElementById("partidas").style.display="none";
 }
 
+// ===== INIT =====
 carregar();
 mostrarTimes();
 atualizarRanking();
