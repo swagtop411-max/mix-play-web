@@ -96,38 +96,33 @@ padding:6px 0;
 
 <div class="container">
 
-<!-- CADASTRO -->
 <div id="paginaCadastro">
 <h1>Cadastro de Times</h1>
-
 <input type="text" id="nomeTime" placeholder="Nome do Time">
 <button class="btn-green" onclick="adicionarTime()">Adicionar Time</button>
-
 <div id="listaTimes"></div>
-
-<button class="btn-blue" onclick="irParaPartidas()">Ir para Partidas</button>
+<button class="btn-blue" onclick="iniciar()">Ir para Partidas</button>
 </div>
 
-<!-- PARTIDAS -->
 <div id="paginaPartidas" class="hidden">
 <h1>Partidas</h1>
 
 <div class="match-box">
 <div class="timer" id="cronometro">00:00</div>
 <div class="scoreboard">
-<span id="time1Nome">---</span>
+<span id="time1"></span>
 <span class="vs">VS</span>
-<span id="time2Nome">---</span>
+<span id="time2"></span>
 </div>
 </div>
 
-<button class="btn-green" onclick="definirVencedor(0)">Time 1 Venceu</button>
-<button class="btn-green" onclick="definirVencedor(1)">Time 2 Venceu</button>
+<button class="btn-green" onclick="vencedor(0)">Time 1 Venceu</button>
+<button class="btn-green" onclick="vencedor(1)">Time 2 Venceu</button>
 
 <h2 style="color:white;margin-top:15px;">Ranking</h2>
 <div id="ranking"></div>
 
-<button class="btn-red" onclick="voltarCadastro()">Voltar</button>
+<button class="btn-red" onclick="voltar()">Voltar</button>
 </div>
 
 </div>
@@ -137,39 +132,35 @@ padding:6px 0;
 let times = JSON.parse(localStorage.getItem("times")) || [];
 let ranking = JSON.parse(localStorage.getItem("ranking")) || {};
 
-let fila = [];
 let atual = [];
+let fila = [];
 let campeao = null;
-let streak = 0;
+let sequencia = 0;
 
-let tempo = 0;
-let intervalo = null;
+let tempo=0;
+let intervalo=null;
 
-/* ---------------- SALVAR ---------------- */
-
-function salvar(){
-localStorage.setItem("times",JSON.stringify(times));
-localStorage.setItem("ranking",JSON.stringify(ranking));
-}
-
-/* ---------------- CADASTRO ---------------- */
+/* --------- CADASTRO --------- */
 
 function adicionarTime(){
-const nome = nomeTime.value.trim();
+const nome=nomeTime.value.trim();
 if(!nome) return;
 
 times.push(nome);
-ranking[nome] = ranking[nome] || 0;
+ranking[nome]=ranking[nome]||0;
+
+localStorage.setItem("times",JSON.stringify(times));
+localStorage.setItem("ranking",JSON.stringify(ranking));
 
 nomeTime.value="";
-salvar();
 renderizarTimes();
 }
 
 function excluirTime(i){
 delete ranking[times[i]];
 times.splice(i,1);
-salvar();
+localStorage.setItem("times",JSON.stringify(times));
+localStorage.setItem("ranking",JSON.stringify(ranking));
 renderizarTimes();
 }
 
@@ -185,16 +176,16 @@ onclick="excluirTime(${i})">Excluir</button>
 });
 }
 
-/* ---------------- PARTIDAS ---------------- */
+/* --------- PARTIDAS --------- */
 
-function irParaPartidas(){
+function iniciar(){
 if(times.length<2) return alert("Cadastre pelo menos 2 times");
 
-fila = [...times];
+fila=[...times];
 embaralhar(fila);
 
-atual = [fila.shift(), fila.shift()];
-mostrarPartida();
+atual=[fila.shift(),fila.shift()];
+mostrar();
 
 paginaCadastro.classList.add("hidden");
 paginaPartidas.classList.remove("hidden");
@@ -202,58 +193,56 @@ paginaPartidas.classList.remove("hidden");
 atualizarRanking();
 }
 
-function voltarCadastro(){
+function voltar(){
 paginaPartidas.classList.add("hidden");
 paginaCadastro.classList.remove("hidden");
 }
 
-function mostrarPartida(){
-time1Nome.innerText = atual[0];
-time2Nome.innerText = atual[1];
+function mostrar(){
+time1.innerText=atual[0];
+time2.innerText=atual[1];
 resetarCronometro();
 }
 
-/* ---------------- LÓGICA CORRETA ---------------- */
+function vencedor(index){
 
-function definirVencedor(index){
+let win = atual[index];
+let lose = atual[index===0?1:0];
 
-const vencedor = atual[index];
-const perdedor = atual[index === 0 ? 1 : 0];
+ranking[win]++;
+localStorage.setItem("ranking",JSON.stringify(ranking));
 
-ranking[vencedor]++;
-salvar();
-
-if(campeao === vencedor){
-streak++;
+if(campeao===win){
+sequencia++;
 }else{
-campeao = vencedor;
-streak = 1;
+campeao=win;
+sequencia=1;
 }
 
-if(streak === 1){
+/* -------- LÓGICA CORRETA -------- */
+
+if(sequencia===1){
 /* joga mais uma vez */
-let proximo = proximoTime([vencedor, perdedor]);
-atual = [vencedor, proximo];
+let proximo = proximoTime(win,lose);
+atual=[win,proximo];
 }
 else{
-/* venceu duas seguidas → sai */
-campeao = null;
-streak = 0;
+/* ganhou 2 seguidas → sai */
+campeao=null;
+sequencia=0;
 
-fila = [...times];
-embaralhar(fila);
-
-atual = [fila.shift(), fila.shift()];
+/* gera partida nova sem ele */
+let disponiveis=times.filter(t=>t!==win);
+embaralhar(disponiveis);
+atual=[disponiveis[0],disponiveis[1]];
 }
 
 atualizarRanking();
-mostrarPartida();
+mostrar();
 }
 
-/* ---------------- AUXILIARES ---------------- */
-
-function proximoTime(excluir){
-let disponiveis = times.filter(t => !excluir.includes(t));
+function proximoTime(win,lose){
+let disponiveis=times.filter(t=>t!==win && t!==lose);
 embaralhar(disponiveis);
 return disponiveis[0];
 }
@@ -278,7 +267,7 @@ const j=Math.floor(Math.random()*(i+1));
 }
 }
 
-/* ---------------- CRONÔMETRO ---------------- */
+/* --------- CRONÔMETRO --------- */
 
 function iniciarCronometro(){
 clearInterval(intervalo);
@@ -298,7 +287,7 @@ cronometro.innerText="00:00";
 iniciarCronometro();
 }
 
-/* ---------------- INICIALIZAÇÃO ---------------- */
+/* --------- INIT --------- */
 
 renderizarTimes();
 atualizarRanking();
