@@ -5,11 +5,10 @@
 // =======================
 let times = [];
 let vitorias = {};
-let confrontos = [];
 let filaConfrontos = [];
 let atual = [];
 let tempo = 900;
-let intervalo;
+let intervalo = null;
 
 let vencedorAtual = null;
 let streak = 0;
@@ -22,23 +21,39 @@ const STORAGE_KEY = "mixplay_times";
 // =======================
 function salvar(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    times,
-    vitorias
+    times: times,
+    vitorias: vitorias
   }));
 }
 
 function carregar(){
   let data = localStorage.getItem(STORAGE_KEY);
   if(data){
-    let obj = JSON.parse(data);
-    times = obj.times || [];
-    vitorias = obj.vitorias || {};
+    try{
+      let obj = JSON.parse(data);
+      times = obj.times || [];
+      vitorias = obj.vitorias || {};
+    }catch(e){
+      times = [];
+      vitorias = {};
+    }
   }
 }
 
 
 // =======================
-// GERAR CONFRONTOS PERFEITOS
+// EMBARALHAR
+// =======================
+function embaralhar(array){
+  for(let i = array.length - 1; i > 0; i--){
+    let j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+
+// =======================
+// GERAR TODOS CONTRA TODOS
 // =======================
 function gerarFilaConfrontos(){
   filaConfrontos = [];
@@ -50,13 +65,6 @@ function gerarFilaConfrontos(){
   }
 
   embaralhar(filaConfrontos);
-}
-
-function embaralhar(array){
-  for(let i = array.length - 1; i > 0; i--){
-    let j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
 }
 
 
@@ -89,6 +97,7 @@ function remover(i){
 
   times.splice(i,1);
   delete vitorias[nome];
+
   mostrarTimes();
   atualizarRanking();
   salvar();
@@ -118,22 +127,23 @@ function iniciar(){
 // =======================
 function gerarPartida(){
 
+  if(times.length < 2) return;
+
   if(filaConfrontos.length === 0){
     gerarFilaConfrontos();
   }
 
-  let proxima;
-
-  // Regra do limite de 2 vitórias seguidas
+  // regra de no máximo 2 seguidas
   if(streak >= 2){
     vencedorAtual = null;
     streak = 0;
   }
 
+  let proxima = null;
+
   if(vencedorAtual){
-    // procura confronto com vencedorAtual
     let index = filaConfrontos.findIndex(p =>
-      p.includes(vencedorAtual)
+      p[0] === vencedorAtual || p[1] === vencedorAtual
     );
 
     if(index !== -1){
@@ -148,7 +158,7 @@ function gerarPartida(){
   atual = proxima;
 
   document.getElementById("jogo").innerHTML =
-    `${atual[0]} VS ${atual[1]}`;
+    atual[0] + " VS " + atual[1];
 
   resetTimer();
 }
@@ -158,6 +168,8 @@ function gerarPartida(){
 // VENCEDOR
 // =======================
 function vencedor(num){
+
+  if(!atual || atual.length < 2) return;
 
   clearInterval(intervalo);
 
@@ -169,7 +181,7 @@ function vencedor(num){
   salvar();
 
   document.getElementById("jogo").innerHTML =
-    `🏆 <span class="vencedor">${nome} venceu!</span>`;
+    "🏆 <span class='vencedor'>" + nome + " venceu!</span>";
 
   if(vencedorAtual === nome){
     streak++;
@@ -178,7 +190,7 @@ function vencedor(num){
     streak = 1;
   }
 
-  setTimeout(()=>{
+  setTimeout(function(){
     gerarPartida();
   }, 2000);
 }
@@ -190,9 +202,10 @@ function vencedor(num){
 function resetTimer(){
   tempo = 900;
   updateTimer();
-  clearInterval(intervalo);
 
-  intervalo = setInterval(()=>{
+  if(intervalo) clearInterval(intervalo);
+
+  intervalo = setInterval(function(){
     tempo--;
     updateTimer();
 
@@ -223,9 +236,10 @@ function atualizarRanking(){
   let ordenado = Object.entries(vitorias)
     .sort((a,b)=>b[1]-a[1]);
 
-  ordenado.forEach(([nome,pontos],i)=>{
+  ordenado.forEach(function(item,i){
     rankingDiv.innerHTML +=
-      `<div>${i+1}º - ${nome} (${pontos} vitórias)</div>`;
+      "<div>" + (i+1) + "º - " + item[0] +
+      " (" + item[1] + " vitórias)</div>";
   });
 }
 
@@ -234,7 +248,7 @@ function atualizarRanking(){
 // VOLTAR
 // =======================
 function voltar(){
-  clearInterval(intervalo);
+  if(intervalo) clearInterval(intervalo);
   document.getElementById("cadastro").style.display="block";
   document.getElementById("partidas").style.display="none";
 }
