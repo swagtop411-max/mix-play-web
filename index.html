@@ -1,266 +1,255 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mix Play Web</title>
 
 <style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
 body{
-margin:0;
-font-family:Arial,Helvetica,sans-serif;
-background:#000;
-color:#fff;
-text-align:center;
+    min-height:100vh;
+    background: url("file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
+    background-size: cover;
+    color:#fff;
+    display:flex;
+    justify-content:center;
 }
 
-header{
-background:#111;
-padding:15px;
-font-size:22px;
-font-weight:bold;
+.overlay{
+    width:100%;
+    min-height:100vh;
+    background:rgba(0,0,0,0.75);
+    padding:20px;
 }
 
-.main-img{
-width:100%;
-max-height:350px;
-object-fit:cover;
+h1{
+    text-align:center;
+    margin-bottom:20px;
 }
 
 .container{
-padding:15px;
+    max-width:600px;
+    margin:auto;
+}
+
+input, button{
+    padding:10px;
+    margin:5px 0;
+    border:none;
+    border-radius:6px;
 }
 
 input{
-padding:8px;
-margin:5px;
-border-radius:5px;
-border:none;
+    width:100%;
 }
 
 button{
-padding:8px 15px;
-margin:5px;
-border:none;
-border-radius:5px;
-cursor:pointer;
-font-weight:bold;
+    background:#00c853;
+    color:#fff;
+    cursor:pointer;
+    font-weight:bold;
 }
 
-.btn-add{background:#28a745;color:#fff;}
-.btn-match{background:#007bff;color:#fff;}
-.btn-win{background:#ffc107;color:#000;}
-.btn-del{background:#dc3545;color:#fff;}
-.btn-reset{background:#6c757d;color:#fff;}
-
-.card{
-background:#111;
-margin:10px auto;
-padding:10px;
-border-radius:8px;
-max-width:500px;
+button:hover{
+    opacity:0.9;
 }
 
-.ranking-item{
-display:flex;
-justify-content:space-between;
-padding:5px;
-border-bottom:1px solid #333;
+.time{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:#1c1c1c;
+    padding:8px;
+    border-radius:6px;
+    margin:5px 0;
+}
+
+.delete{
+    background:#c62828;
+    padding:5px 8px;
+    font-size:12px;
+}
+
+.partida{
+    background:#1c1c1c;
+    padding:10px;
+    border-radius:6px;
+    margin-top:15px;
+    text-align:center;
+}
+
+.vencedor{
+    background:#2962ff;
+    margin-top:10px;
+}
+
+.ranking{
+    margin-top:20px;
+}
+
+.cronometro{
+    text-align:center;
+    font-size:24px;
+    margin-top:10px;
 }
 </style>
 </head>
 
 <body>
-
-<header>Mix Play Web</header>
-
-<img src="file_000000009aac71f5a38536be785d2478.png" class="main-img">
-
+<div class="overlay">
 <div class="container">
 
-<h3>Cadastrar Time</h3>
-<input type="text" id="teamName" placeholder="Nome do Time">
-<button class="btn-add" onclick="addTeam()">Adicionar</button>
+<h1>Mix Play Web</h1>
 
-<h3>Times</h3>
-<div id="teamList"></div>
+<input type="text" id="nomeTime" placeholder="Nome do Time">
+<button onclick="adicionarTime()">Adicionar Time</button>
 
-<h3>Partida Atual</h3>
-<div id="matchArea" class="card"></div>
-<button class="btn-match" onclick="generateMatch()">Gerar Partida</button>
+<div id="listaTimes"></div>
 
-<h3>Cronômetro</h3>
-<div id="timer">00:00</div>
-<button onclick="startTimer()">Iniciar</button>
-<button onclick="stopTimer()">Parar</button>
-<button onclick="resetTimer()">Resetar</button>
-
-<h3>Ranking</h3>
-<div id="ranking"></div>
-<button class="btn-reset" onclick="resetAll()">Resetar Tudo</button>
-
+<div class="partida" id="areaPartida" style="display:none;">
+    <h3 id="jogoAtual"></h3>
+    <button class="vencedor" onclick="definirVencedor(1)">Time 1 venceu</button>
+    <button class="vencedor" onclick="definirVencedor(2)">Time 2 venceu</button>
+    <div class="cronometro" id="cronometro">00:00</div>
 </div>
 
-<audio id="bgMusic" loop>
-<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_6c9a0a6d62.mp3?filename=sport-rock-trailer-110964.mp3">
-</audio>
+<button onclick="iniciarJogo()">Iniciar</button>
+
+<div class="ranking">
+    <h3>Ranking</h3>
+    <div id="rankingLista"></div>
+</div>
+
+</div>
+</div>
 
 <script>
-let teams = JSON.parse(localStorage.getItem("teams")) || [];
-let wins = JSON.parse(localStorage.getItem("wins")) || {};
-let currentMatch = JSON.parse(localStorage.getItem("currentMatch")) || [];
-let winnerQueue = JSON.parse(localStorage.getItem("winnerQueue")) || null;
-let winStreak = JSON.parse(localStorage.getItem("winStreak")) || 0;
 
-/* -------- SALVAR -------- */
-function save(){
-localStorage.setItem("teams",JSON.stringify(teams));
-localStorage.setItem("wins",JSON.stringify(wins));
-localStorage.setItem("currentMatch",JSON.stringify(currentMatch));
-localStorage.setItem("winnerQueue",JSON.stringify(winnerQueue));
-localStorage.setItem("winStreak",JSON.stringify(winStreak));
+let times = JSON.parse(localStorage.getItem("times")) || [];
+let fila = [];
+let atual = [];
+let contadorVitorias = 0;
+let timer;
+let segundos = 0;
+
+function salvar(){
+    localStorage.setItem("times", JSON.stringify(times));
 }
 
-/* -------- ADICIONAR TIME -------- */
-function addTeam(){
-let name = document.getElementById("teamName").value.trim();
-if(!name) return;
-if(teams.includes(name)) return alert("Time já existe");
-teams.push(name);
-wins[name]=wins[name]||0;
-document.getElementById("teamName").value="";
-save();
-render();
+function adicionarTime(){
+    let nome = document.getElementById("nomeTime").value.trim();
+    if(!nome) return;
+
+    times.push({nome:nome, vitorias:0});
+    document.getElementById("nomeTime").value="";
+    salvar();
+    atualizarLista();
+    atualizarRanking();
 }
 
-/* -------- EXCLUIR TIME -------- */
-function deleteTeam(name){
-teams = teams.filter(t=>t!==name);
-delete wins[name];
-save();
-render();
+function excluirTime(index){
+    times.splice(index,1);
+    salvar();
+    atualizarLista();
+    atualizarRanking();
 }
 
-/* -------- GERAR PARTIDA -------- */
-function generateMatch(){
-
-if(teams.length<2) return alert("Cadastre pelo menos 2 times");
-
-if(winnerQueue && winStreak===1){
-let others = teams.filter(t=>t!==winnerQueue);
-let opponent = others[Math.floor(Math.random()*others.length)];
-currentMatch=[winnerQueue,opponent];
-}else{
-let shuffled=[...teams].sort(()=>0.5-Math.random());
-currentMatch=[shuffled[0],shuffled[1]];
-winnerQueue=null;
-winStreak=0;
+function atualizarLista(){
+    let lista = document.getElementById("listaTimes");
+    lista.innerHTML="";
+    times.forEach((t,i)=>{
+        lista.innerHTML += `
+        <div class="time">
+            ${t.nome}
+            <button class="delete" onclick="excluirTime(${i})">Excluir</button>
+        </div>`;
+    });
 }
 
-save();
-render();
+function atualizarRanking(){
+    let r = document.getElementById("rankingLista");
+    r.innerHTML="";
+    let ordenado = [...times].sort((a,b)=>b.vitorias-a.vitorias);
+    ordenado.forEach(t=>{
+        r.innerHTML += `<div>${t.nome} - ${t.vitorias} vitórias</div>`;
+    });
 }
 
-/* -------- DECLARAR VENCEDOR -------- */
-function declareWinner(team){
+function iniciarJogo(){
+    if(times.length < 2) return alert("Cadastre pelo menos 2 times");
 
-wins[team]++;
-
-if(winnerQueue===team){
-winStreak++;
-}else{
-winnerQueue=team;
-winStreak=1;
+    fila = [...times];
+    contadorVitorias = 0;
+    proximaPartida();
 }
 
-/* REGRA MATEMÁTICA PERFEITA */
-if(winStreak>=2){
-winnerQueue=null;
-winStreak=0;
+function proximaPartida(){
+
+    if(fila.length < 2){
+        fila = [...times];
+    }
+
+    atual = [fila.shift(), fila.shift()];
+    document.getElementById("areaPartida").style.display="block";
+    document.getElementById("jogoAtual").innerText =
+        atual[0].nome + " VS " + atual[1].nome;
+
+    iniciarCronometro();
 }
 
-currentMatch=[];
-save();
-render();
+function definirVencedor(num){
+
+    pararCronometro();
+
+    let vencedor = atual[num-1];
+    let perdedor = atual[num==1?1:0];
+
+    vencedor.vitorias++;
+    atualizarRanking();
+    salvar();
+
+    contadorVitorias++;
+
+    // regra correta:
+    // vencedor joga no máximo 2 vezes
+    if(contadorVitorias == 1){
+        fila.unshift(vencedor); // joga mais 1 vez
+    } else {
+        contadorVitorias = 0;
+        fila.push(vencedor); // volta para o final
+    }
+
+    fila.push(perdedor);
+
+    proximaPartida();
 }
 
-/* -------- RENDER -------- */
-function render(){
-
-/* Lista */
-let list="";
-teams.forEach(t=>{
-list+=`
-<div class="card">
-${t}
-<button class="btn-del" onclick="deleteTeam('${t}')">X</button>
-</div>`;
-});
-document.getElementById("teamList").innerHTML=list;
-
-/* Partida */
-if(currentMatch.length===2){
-document.getElementById("matchArea").innerHTML=
-`
-<h4>${currentMatch[0]} VS ${currentMatch[1]}</h4>
-<button class="btn-win" onclick="declareWinner('${currentMatch[0]}')">${currentMatch[0]} venceu</button>
-<button class="btn-win" onclick="declareWinner('${currentMatch[1]}')">${currentMatch[1]} venceu</button>
-`;
-}else{
-document.getElementById("matchArea").innerHTML="Nenhuma partida ativa";
+function iniciarCronometro(){
+    segundos = 0;
+    document.getElementById("cronometro").innerText="00:00";
+    clearInterval(timer);
+    timer = setInterval(()=>{
+        segundos++;
+        let min = String(Math.floor(segundos/60)).padStart(2,"0");
+        let seg = String(segundos%60).padStart(2,"0");
+        document.getElementById("cronometro").innerText=min+":"+seg;
+    },1000);
 }
 
-/* Ranking */
-let rankingHTML="";
-let sorted=Object.entries(wins).sort((a,b)=>b[1]-a[1]);
-sorted.forEach(r=>{
-rankingHTML+=`
-<div class="ranking-item">
-<span>${r[0]}</span>
-<span>${r[1]} vitórias</span>
-</div>`;
-});
-document.getElementById("ranking").innerHTML=rankingHTML;
+function pararCronometro(){
+    clearInterval(timer);
 }
 
-/* -------- CRONÔMETRO -------- */
-let timerInterval;
-let seconds=0;
+atualizarLista();
+atualizarRanking();
 
-function startTimer(){
-document.getElementById("bgMusic").play();
-timerInterval=setInterval(()=>{
-seconds++;
-let min=Math.floor(seconds/60);
-let sec=seconds%60;
-document.getElementById("timer").innerText=
-(min<10?"0":"")+min+":"+(sec<10?"0":"")+sec;
-},1000);
-}
-
-function stopTimer(){
-clearInterval(timerInterval);
-}
-
-function resetTimer(){
-seconds=0;
-document.getElementById("timer").innerText="00:00";
-}
-
-/* -------- RESET GERAL -------- */
-function resetAll(){
-if(confirm("Tem certeza?")){
-localStorage.clear();
-teams=[];
-wins={};
-currentMatch=[];
-winnerQueue=null;
-winStreak=0;
-render();
-}
-}
-
-render();
 </script>
 
 </body>
