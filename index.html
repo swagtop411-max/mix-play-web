@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,173 +7,240 @@
 
 <style>
 body{
-margin:0;
-font-family:Arial;
-background:url('file_000000009aac71f5a38536be785d2478.png') no-repeat center center fixed;
-background-size:cover;
-color:white;
+  margin:0;
+  font-family:Arial, sans-serif;
+  color:white;
+  text-align:center;
+  background:url("file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
+  background-size:cover;
 }
-.overlay{
-background:rgba(0,0,0,0.75);
-min-height:100vh;
-padding:20px;
+
+.container{
+  background:rgba(0,0,0,0.65);
+  min-height:100vh;
+  padding:20px;
 }
+
 button{
-padding:12px;
-border:none;
-border-radius:8px;
-font-weight:bold;
-cursor:pointer;
-margin:5px;
+  padding:10px 20px;
+  margin:5px;
+  border:none;
+  border-radius:8px;
+  font-size:16px;
+  cursor:pointer;
 }
-.victory{background:#00c8ff;color:white;width:45%;}
-.back{background:#777;}
-.page{display:none;}
-.active{display:block;}
-.ranking-item{
-display:flex;
-justify-content:space-between;
-border-bottom:1px solid rgba(255,255,255,0.2);
-padding:5px 0;
+
+.blue{ background:#19b6d2; color:white; }
+.gray{ background:#ccc; color:black; }
+
+input{
+  padding:8px;
+  border-radius:6px;
+  border:none;
 }
-.timer{font-size:22px;margin-top:10px;}
+
+.hidden{ display:none; }
+
+h1{ margin-top:10px; }
 </style>
 </head>
-
 <body>
-<div class="overlay">
 
-<div id="game" class="active">
+<div class="container">
+
+<!-- ================= CADASTRO ================= -->
+<div id="cadastroPage">
+<h1>Cadastro de Times</h1>
+
+<input id="teamInput" placeholder="Nome do time">
+<button onclick="addTeam()" class="blue">Adicionar</button>
+
+<ul id="teamList"></ul>
+
+<button onclick="startGames()" class="blue">Ir para Partidas</button>
+</div>
+
+
+<!-- ================= PARTIDAS ================= -->
+<div id="gamePage" class="hidden">
+
 <h1>Partidas</h1>
 
-<h2 id="match"></h2>
+<h2 id="matchTitle"></h2>
 
-<button class="victory" id="btn1">Vitória Time 1</button>
-<button class="victory" id="btn2">Vitória Time 2</button>
+<button onclick="win(1)" class="blue">Vitória Time 1</button>
+<button onclick="win(2)" class="blue">Vitória Time 2</button>
 
-<div class="timer" id="timer">00:00</div>
+<h2 id="timer">00:00</h2>
 
-<h2>Ranking</h2>
+<h1>Ranking</h1>
 <div id="ranking"></div>
+
+<button onclick="goBack()" class="gray">Voltar</button>
 
 </div>
 
 </div>
 
 <script>
-
-let teams = JSON.parse(localStorage.getItem("teams")) || ["Murilo","Ana","Carlos","João"];
+let teams = JSON.parse(localStorage.getItem("teams")) || [];
 let stats = JSON.parse(localStorage.getItem("stats")) || {};
-
-teams.forEach(t=>{
-if(!stats[t]){
-stats[t]={wins:0,losses:0,saldo:0};
-}
-});
-
-let queue=[...teams];
-let currentMatch=[];
-let lastWinner=null;
-let streak=0;
-let seconds=0;
+let queue = [];
+let currentMatch = [];
+let winnerStreak = 0;
+let currentWinner = null;
 let timerInterval;
+let seconds = 0;
 
-function save(){
-localStorage.setItem("teams",JSON.stringify(teams));
-localStorage.setItem("stats",JSON.stringify(stats));
+/* ================= SALVAR ================= */
+function saveData(){
+  localStorage.setItem("teams", JSON.stringify(teams));
+  localStorage.setItem("stats", JSON.stringify(stats));
 }
 
-function shuffle(arr){
-for(let i=arr.length-1;i>0;i--){
-let j=Math.floor(Math.random()*(i+1));
-[arr[i],arr[j]]=[arr[j],arr[i]];
-}
+/* ================= CADASTRO ================= */
+function addTeam(){
+  const name = document.getElementById("teamInput").value.trim();
+  if(!name) return;
+
+  teams.push(name);
+  stats[name] = {wins:0, losses:0};
+  document.getElementById("teamInput").value="";
+  saveData();
+  renderTeams();
 }
 
+function renderTeams(){
+  const list = document.getElementById("teamList");
+  list.innerHTML="";
+  teams.forEach((team,i)=>{
+    const li=document.createElement("li");
+    li.innerHTML = team + 
+    " <button onclick='removeTeam("+i+")' class='gray'>X</button>";
+    list.appendChild(li);
+  });
+}
+
+function removeTeam(i){
+  delete stats[teams[i]];
+  teams.splice(i,1);
+  saveData();
+  renderTeams();
+}
+
+/* ================= INICIAR ================= */
+function startGames(){
+  if(teams.length < 2) return alert("Cadastre pelo menos 2 times");
+
+  queue = [...teams];
+  currentWinner = null;
+  winnerStreak = 0;
+
+  document.getElementById("cadastroPage").classList.add("hidden");
+  document.getElementById("gamePage").classList.remove("hidden");
+
+  nextMatch();
+}
+
+/* ================= PARTIDAS ================= */
 function nextMatch(){
 
-if(queue.length<2){
-queue=[...teams];
-shuffle(queue);
+  if(currentWinner && winnerStreak < 2){
+    // vencedor joga novamente
+    const nextOpponent = queue.find(t=>t!==currentWinner);
+    currentMatch = [currentWinner, nextOpponent];
+  }else{
+    // troca obrigatória
+    if(currentWinner){
+      queue.push(currentWinner);
+    }
+    currentWinner = null;
+    winnerStreak = 0;
+
+    const t1 = queue.shift();
+    const t2 = queue.shift();
+    queue.push(t1);
+    queue.push(t2);
+
+    currentMatch = [t1,t2];
+  }
+
+  document.getElementById("matchTitle").innerText =
+    currentMatch[0] + " VS " + currentMatch[1];
+
+  startTimer();
+  renderRanking();
 }
 
-currentMatch=[queue.shift(),queue.shift()];
-document.getElementById("match").innerText=
-currentMatch[0]+" VS "+currentMatch[1];
+function win(teamNumber){
 
-resetTimer();
+  const winner = currentMatch[teamNumber-1];
+  const loser = currentMatch[teamNumber===1?1:0];
+
+  stats[winner].wins++;
+  stats[loser].losses++;
+
+  saveData();
+
+  if(currentWinner === winner){
+    winnerStreak++;
+  }else{
+    currentWinner = winner;
+    winnerStreak = 1;
+  }
+
+  // remove perdedor da frente da fila
+  queue = queue.filter(t=>t!==loser);
+  queue.push(loser);
+
+  nextMatch();
 }
 
-function handleWinner(index){
-
-if(!currentMatch.length) return;
-
-let winner=currentMatch[index];
-let loser=currentMatch[index===0?1:0];
-
-stats[winner].wins++;
-stats[winner].saldo++;
-stats[loser].losses++;
-stats[loser].saldo--;
-
-if(lastWinner===winner){
-streak++;
-}else{
-streak=1;
-lastWinner=winner;
+/* ================= TIMER ================= */
+function startTimer(){
+  clearInterval(timerInterval);
+  seconds = 0;
+  timerInterval = setInterval(()=>{
+    seconds++;
+    let m = String(Math.floor(seconds/60)).padStart(2,"0");
+    let s = String(seconds%60).padStart(2,"0");
+    document.getElementById("timer").innerText = m+":"+s;
+  },1000);
 }
 
-/* REGRA DEFINITIVA */
-
-if(streak===2){
-streak=0;
-lastWinner=null;
-queue.push(loser);
-}else{
-queue.unshift(winner);
-queue.push(loser);
-}
-
-save();
-renderRanking();
-nextMatch();
-}
-
+/* ================= RANKING ================= */
 function renderRanking(){
-let div=document.getElementById("ranking");
-div.innerHTML="";
-let sorted=[...teams].sort((a,b)=>stats[b].saldo-stats[a].saldo);
+  const div = document.getElementById("ranking");
+  div.innerHTML="";
 
-sorted.forEach(t=>{
-div.innerHTML+=`
-<div class="ranking-item">
-<span>${t}</span>
-<span>${stats[t].saldo}</span>
-</div>`;
-});
+  const ranking = Object.keys(stats).map(team=>{
+    return {
+      name:team,
+      wins:stats[team].wins,
+      losses:stats[team].losses,
+      saldo:stats[team].wins - stats[team].losses
+    }
+  }).sort((a,b)=>b.saldo-a.saldo);
+
+  ranking.forEach(t=>{
+    div.innerHTML +=
+    "<p>"+t.name+
+    " | Vitórias: "+t.wins+
+    " | Derrotas: "+t.losses+
+    " | Saldo: "+t.saldo+
+    "</p>";
+  });
 }
 
-function resetTimer(){
-clearInterval(timerInterval);
-seconds=0;
-timerInterval=setInterval(()=>{
-seconds++;
-let m=Math.floor(seconds/60);
-let s=seconds%60;
-document.getElementById("timer").innerText=
-String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
-},1000);
+/* ================= VOLTAR ================= */
+function goBack(){
+  document.getElementById("gamePage").classList.add("hidden");
+  document.getElementById("cadastroPage").classList.remove("hidden");
 }
 
-/* EVENT LISTENERS GARANTIDOS */
-
-document.getElementById("btn1").addEventListener("click",()=>handleWinner(0));
-document.getElementById("btn2").addEventListener("click",()=>handleWinner(1));
-
-shuffle(queue);
-nextMatch();
+/* ================= INIT ================= */
+renderTeams();
 renderRanking();
-
 </script>
 
 </body>
