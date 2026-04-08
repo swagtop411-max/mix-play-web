@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mix Play Vôlei</title>
+<title>Arena M&M</title>
 
 <style>
 body{
@@ -11,8 +11,6 @@ body{
   font-family:Arial;
   color:white;
   text-align:center;
-
-  /* https://github.com/swagtop411-max/mix-play-web/blob/2cd56cb6a64b82f0874e845e9d459bf1a17f3ae3/file_000000009aac71f5a38536be785d2478.png*/
   background:url("https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
   background-size:cover;
 }
@@ -23,6 +21,37 @@ body{
   padding:20px;
 }
 
+/* LOGO */
+.logo{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  margin-bottom:15px;
+}
+
+.logo img{
+  width:120px;
+  border-radius:20px;
+  box-shadow:0 0 25px rgba(255,215,0,0.5);
+  animation:float 3s ease-in-out infinite;
+}
+
+.logo h2{
+  margin:0;
+  font-size:18px;
+  color:#facc15;
+  font-weight:bold;
+  letter-spacing:1px;
+}
+
+@keyframes float{
+  0%{ transform:translateY(0); }
+  50%{ transform:translateY(-6px); }
+  100%{ transform:translateY(0); }
+}
+
+/* UI */
 button{
   padding:12px 22px;
   margin:6px;
@@ -59,9 +88,15 @@ input{
 <body>
 <div class="container">
 
+<!-- LOGO -->
+<div class="logo">
+  <img src="https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/IMG_20260319_232311_913.webp">
+  <h2>M&M Organização</h2>
+</div>
+
 <!-- CADASTRO -->
 <div id="cadastroPage">
-<h1>🏐 Mix Play - Vôlei</h1>
+<h1>🏐 Arena M&M</h1>
 
 <input id="teamInput" placeholder="Nome do time">
 <button onclick="addTeam()" class="blue">Adicionar</button>
