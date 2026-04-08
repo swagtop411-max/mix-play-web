@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Organizador de Vôlei</title>
+<title>Mix Play Vôlei</title>
 
 <style>
 body{
@@ -11,10 +11,15 @@ body{
   font-family:Arial;
   color:white;
   text-align:center;
-  background:#0f172a;
+
+  /* https://github.com/swagtop411-max/mix-play-web/blob/2cd56cb6a64b82f0874e845e9d459bf1a17f3ae3/file_000000009aac71f5a38536be785d2478.png*/
+  background:url("https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
+  background-size:cover;
 }
 
 .container{
+  background:rgba(0,0,0,0.75);
+  min-height:100vh;
   padding:20px;
 }
 
@@ -43,7 +48,7 @@ input{
 .hidden{ display:none; }
 
 .card{
-  background:#1e293b;
+  background:rgba(30,41,59,0.85);
   padding:15px;
   border-radius:12px;
   margin:10px;
@@ -56,7 +61,7 @@ input{
 
 <!-- CADASTRO -->
 <div id="cadastroPage">
-<h1>🏐 Cadastro de Times</h1>
+<h1>🏐 Mix Play - Vôlei</h1>
 
 <input id="teamInput" placeholder="Nome do time">
 <button onclick="addTeam()" class="blue">Adicionar</button>
@@ -111,13 +116,11 @@ let quadraB = [];
 let timerInterval;
 let seconds = 0;
 
-/* SALVAR */
 function saveData(){
   localStorage.setItem("teams", JSON.stringify(teams));
   localStorage.setItem("stats", JSON.stringify(stats));
 }
 
-/* CADASTRO */
 function addTeam(){
   const name = document.getElementById("teamInput").value.trim();
   if(!name) return;
@@ -146,7 +149,6 @@ function removeTeam(i){
   renderTeams();
 }
 
-/* INICIAR */
 function startGames(){
   if(teams.length < 2){
     alert("Precisa de pelo menos 2 times");
@@ -162,10 +164,8 @@ function startGames(){
   startTimer();
 }
 
-/* GERAR JOGOS */
 function gerarQuadras(){
 
-  // evita erro com poucos times
   if(queue.length < 2){
     document.getElementById("quadraA").innerText = "Aguardando times...";
     document.getElementById("quadraB").innerText = "-";
@@ -180,30 +180,9 @@ function gerarQuadras(){
     quadraB = [];
   }
 
-  renderQuadras();
-  renderQueue();
-  renderRanking();
+  renderAll();
 }
 
-/* RENDER */
-function renderQuadras(){
-  document.getElementById("quadraA").innerText =
-    quadraA.length ? quadraA[0] + " 🆚 " + quadraA[1] : "-";
-
-  document.getElementById("quadraB").innerText =
-    quadraB.length ? quadraB[0] + " 🆚 " + quadraB[1] : "Sem times suficientes";
-}
-
-function renderQueue(){
-  const div = document.getElementById("queue");
-  div.innerHTML="";
-
-  queue.forEach((t,i)=>{
-    div.innerHTML += `<p>${i+1}º - ${t}</p>`;
-  });
-}
-
-/* RESULTADO */
 function win(quadra, teamNumber){
 
   let match = quadra === "A" ? quadraA : quadraB;
@@ -217,39 +196,42 @@ function win(quadra, teamNumber){
 
   saveData();
 
-  // perdedor vai pro final da fila
   queue.push(loser);
 
-  // vencedor continua na quadra
-  match = [winner];
+  let newMatch = [winner];
 
-  // adiciona próximo da fila
   if(queue.length){
-    match.push(queue.shift());
+    newMatch.push(queue.shift());
   }
 
-  if(quadra === "A") quadraA = match;
-  else quadraB = match;
+  if(quadra === "A") quadraA = newMatch;
+  else quadraB = newMatch;
 
+  renderAll();
+}
+
+function renderAll(){
   renderQuadras();
   renderQueue();
   renderRanking();
 }
 
-/* TIMER */
-function startTimer(){
-  clearInterval(timerInterval);
-  seconds = 0;
+function renderQuadras(){
+  document.getElementById("quadraA").innerText =
+    quadraA.length === 2 ? quadraA[0] + " 🆚 " + quadraA[1] : "Aguardando...";
 
-  timerInterval = setInterval(()=>{
-    seconds++;
-    let m = String(Math.floor(seconds/60)).padStart(2,"0");
-    let s = String(seconds%60).padStart(2,"0");
-    document.getElementById("timer").innerText = m+":"+s;
-  },1000);
+  document.getElementById("quadraB").innerText =
+    quadraB.length === 2 ? quadraB[0] + " 🆚 " + quadraB[1] : "Sem times suficientes";
 }
 
-/* RANKING */
+function renderQueue(){
+  const div = document.getElementById("queue");
+  div.innerHTML="";
+  queue.forEach((t,i)=>{
+    div.innerHTML += `<p>${i+1}º - ${t}</p>`;
+  });
+}
+
 function renderRanking(){
   const div = document.getElementById("ranking");
   div.innerHTML="";
@@ -264,13 +246,24 @@ function renderRanking(){
   }).sort((a,b)=>b.saldo-a.saldo);
 
   ranking.forEach((t,i)=>{
-    div.innerHTML += `<p ${i===0?"style='color:gold'":""}>
+    div.innerHTML += `<p ${i===0?"style='color:gold;font-weight:bold'":""}>
     ${i+1}º ${t.name} | 🏆 ${t.wins} | ❌ ${t.losses} | 📊 ${t.saldo}
     </p>`;
   });
 }
 
-/* RESET */
+function startTimer(){
+  clearInterval(timerInterval);
+  seconds = 0;
+
+  timerInterval = setInterval(()=>{
+    seconds++;
+    let m = String(Math.floor(seconds/60)).padStart(2,"0");
+    let s = String(seconds%60).padStart(2,"0");
+    document.getElementById("timer").innerText = m+":"+s;
+  },1000);
+}
+
 function resetAll(){
   if(confirm("Resetar tudo?")){
     localStorage.clear();
@@ -278,7 +271,6 @@ function resetAll(){
   }
 }
 
-/* VOLTAR */
 function goBack(){
   document.getElementById("gamePage").classList.add("hidden");
   document.getElementById("cadastroPage").classList.remove("hidden");
