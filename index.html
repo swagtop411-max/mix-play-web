@@ -3,79 +3,97 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mix Play</title>
+<title>Organizador de Vôlei</title>
 
 <style>
 body{
   margin:0;
-  font-family:Arial, sans-serif;
+  font-family:Arial;
   color:white;
   text-align:center;
-  background:url("file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
-  background-size:cover;
+  background:#0f172a;
 }
 
 .container{
-  background:rgba(0,0,0,0.65);
-  min-height:100vh;
   padding:20px;
 }
 
 button{
-  padding:10px 20px;
-  margin:5px;
+  padding:12px 22px;
+  margin:6px;
   border:none;
-  border-radius:8px;
+  border-radius:12px;
   font-size:16px;
   cursor:pointer;
+  font-weight:bold;
+  transition:0.2s;
 }
 
-.blue{ background:#19b6d2; color:white; }
+button:hover{ transform:scale(1.05); }
+
+.blue{ background:#22c55e; color:white; }
 .gray{ background:#ccc; color:black; }
 
 input{
-  padding:8px;
-  border-radius:6px;
+  padding:10px;
+  border-radius:8px;
   border:none;
 }
 
 .hidden{ display:none; }
 
-h1{ margin-top:10px; }
+.card{
+  background:#1e293b;
+  padding:15px;
+  border-radius:12px;
+  margin:10px;
+}
 </style>
 </head>
-<body>
 
+<body>
 <div class="container">
 
-<!-- ================= CADASTRO ================= -->
+<!-- CADASTRO -->
 <div id="cadastroPage">
-<h1>Cadastro de Times</h1>
+<h1>🏐 Cadastro de Times</h1>
 
 <input id="teamInput" placeholder="Nome do time">
 <button onclick="addTeam()" class="blue">Adicionar</button>
 
 <ul id="teamList"></ul>
 
-<button onclick="startGames()" class="blue">Ir para Partidas</button>
+<button onclick="startGames()" class="blue">Iniciar Jogos</button>
 </div>
 
-
-<!-- ================= PARTIDAS ================= -->
+<!-- JOGOS -->
 <div id="gamePage" class="hidden">
 
-<h1>Partidas</h1>
+<h1>🏐 Quadras</h1>
 
-<h2 id="matchTitle"></h2>
+<div class="card">
+<h2>Quadra A</h2>
+<h3 id="quadraA"></h3>
+<button onclick="win('A',1)" class="blue">Time 1 venceu</button>
+<button onclick="win('A',2)" class="blue">Time 2 venceu</button>
+</div>
 
-<button onclick="win(1)" class="blue">Vitória Time 1</button>
-<button onclick="win(2)" class="blue">Vitória Time 2</button>
+<div class="card">
+<h2>Quadra B</h2>
+<h3 id="quadraB"></h3>
+<button onclick="win('B',1)" class="blue">Time 1 venceu</button>
+<button onclick="win('B',2)" class="blue">Time 2 venceu</button>
+</div>
 
 <h2 id="timer">00:00</h2>
 
-<h1>Ranking</h1>
+<h2>📋 Fila</h2>
+<div id="queue"></div>
+
+<h2>🏆 Ranking</h2>
 <div id="ranking"></div>
 
+<button onclick="resetAll()" class="gray">Resetar</button>
 <button onclick="goBack()" class="gray">Voltar</button>
 
 </div>
@@ -85,26 +103,28 @@ h1{ margin-top:10px; }
 <script>
 let teams = JSON.parse(localStorage.getItem("teams")) || [];
 let stats = JSON.parse(localStorage.getItem("stats")) || {};
+
 let queue = [];
-let currentMatch = [];
-let winnerStreak = 0;
-let currentWinner = null;
+let quadraA = [];
+let quadraB = [];
+
 let timerInterval;
 let seconds = 0;
 
-/* ================= SALVAR ================= */
+/* SALVAR */
 function saveData(){
   localStorage.setItem("teams", JSON.stringify(teams));
   localStorage.setItem("stats", JSON.stringify(stats));
 }
 
-/* ================= CADASTRO ================= */
+/* CADASTRO */
 function addTeam(){
   const name = document.getElementById("teamInput").value.trim();
   if(!name) return;
 
   teams.push(name);
   stats[name] = {wins:0, losses:0};
+
   document.getElementById("teamInput").value="";
   saveData();
   renderTeams();
@@ -114,10 +134,8 @@ function renderTeams(){
   const list = document.getElementById("teamList");
   list.innerHTML="";
   teams.forEach((team,i)=>{
-    const li=document.createElement("li");
-    li.innerHTML = team + 
-    " <button onclick='removeTeam("+i+")' class='gray'>X</button>";
-    list.appendChild(li);
+    list.innerHTML += `<li>${team} 
+    <button onclick="removeTeam(${i})" class="gray">X</button></li>`;
   });
 }
 
@@ -128,78 +146,101 @@ function removeTeam(i){
   renderTeams();
 }
 
-/* ================= INICIAR ================= */
+/* INICIAR */
 function startGames(){
-  if(teams.length < 2) return alert("Cadastre pelo menos 2 times");
+  if(teams.length < 2){
+    alert("Precisa de pelo menos 2 times");
+    return;
+  }
 
   queue = [...teams];
-  currentWinner = null;
-  winnerStreak = 0;
 
   document.getElementById("cadastroPage").classList.add("hidden");
   document.getElementById("gamePage").classList.remove("hidden");
 
-  nextMatch();
+  gerarQuadras();
+  startTimer();
 }
 
-/* ================= PARTIDAS ================= */
-function nextMatch(){
+/* GERAR JOGOS */
+function gerarQuadras(){
 
-  if(currentWinner && winnerStreak < 2){
-    // vencedor joga novamente
-    const nextOpponent = queue.find(t=>t!==currentWinner);
-    currentMatch = [currentWinner, nextOpponent];
-  }else{
-    // troca obrigatória
-    if(currentWinner){
-      queue.push(currentWinner);
-    }
-    currentWinner = null;
-    winnerStreak = 0;
-
-    const t1 = queue.shift();
-    const t2 = queue.shift();
-    queue.push(t1);
-    queue.push(t2);
-
-    currentMatch = [t1,t2];
+  // evita erro com poucos times
+  if(queue.length < 2){
+    document.getElementById("quadraA").innerText = "Aguardando times...";
+    document.getElementById("quadraB").innerText = "-";
+    return;
   }
 
-  document.getElementById("matchTitle").innerText =
-    currentMatch[0] + " VS " + currentMatch[1];
+  quadraA = [queue.shift(), queue.shift()];
 
-  startTimer();
+  if(queue.length >= 2){
+    quadraB = [queue.shift(), queue.shift()];
+  } else {
+    quadraB = [];
+  }
+
+  renderQuadras();
+  renderQueue();
   renderRanking();
 }
 
-function win(teamNumber){
+/* RENDER */
+function renderQuadras(){
+  document.getElementById("quadraA").innerText =
+    quadraA.length ? quadraA[0] + " 🆚 " + quadraA[1] : "-";
 
-  const winner = currentMatch[teamNumber-1];
-  const loser = currentMatch[teamNumber===1?1:0];
+  document.getElementById("quadraB").innerText =
+    quadraB.length ? quadraB[0] + " 🆚 " + quadraB[1] : "Sem times suficientes";
+}
+
+function renderQueue(){
+  const div = document.getElementById("queue");
+  div.innerHTML="";
+
+  queue.forEach((t,i)=>{
+    div.innerHTML += `<p>${i+1}º - ${t}</p>`;
+  });
+}
+
+/* RESULTADO */
+function win(quadra, teamNumber){
+
+  let match = quadra === "A" ? quadraA : quadraB;
+  if(match.length < 2) return;
+
+  const winner = match[teamNumber-1];
+  const loser = match[teamNumber===1?1:0];
 
   stats[winner].wins++;
   stats[loser].losses++;
 
   saveData();
 
-  if(currentWinner === winner){
-    winnerStreak++;
-  }else{
-    currentWinner = winner;
-    winnerStreak = 1;
-  }
-
-  // remove perdedor da frente da fila
-  queue = queue.filter(t=>t!==loser);
+  // perdedor vai pro final da fila
   queue.push(loser);
 
-  nextMatch();
+  // vencedor continua na quadra
+  match = [winner];
+
+  // adiciona próximo da fila
+  if(queue.length){
+    match.push(queue.shift());
+  }
+
+  if(quadra === "A") quadraA = match;
+  else quadraB = match;
+
+  renderQuadras();
+  renderQueue();
+  renderRanking();
 }
 
-/* ================= TIMER ================= */
+/* TIMER */
 function startTimer(){
   clearInterval(timerInterval);
   seconds = 0;
+
   timerInterval = setInterval(()=>{
     seconds++;
     let m = String(Math.floor(seconds/60)).padStart(2,"0");
@@ -208,7 +249,7 @@ function startTimer(){
   },1000);
 }
 
-/* ================= RANKING ================= */
+/* RANKING */
 function renderRanking(){
   const div = document.getElementById("ranking");
   div.innerHTML="";
@@ -222,23 +263,27 @@ function renderRanking(){
     }
   }).sort((a,b)=>b.saldo-a.saldo);
 
-  ranking.forEach(t=>{
-    div.innerHTML +=
-    "<p>"+t.name+
-    " | Vitórias: "+t.wins+
-    " | Derrotas: "+t.losses+
-    " | Saldo: "+t.saldo+
-    "</p>";
+  ranking.forEach((t,i)=>{
+    div.innerHTML += `<p ${i===0?"style='color:gold'":""}>
+    ${i+1}º ${t.name} | 🏆 ${t.wins} | ❌ ${t.losses} | 📊 ${t.saldo}
+    </p>`;
   });
 }
 
-/* ================= VOLTAR ================= */
+/* RESET */
+function resetAll(){
+  if(confirm("Resetar tudo?")){
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+/* VOLTAR */
 function goBack(){
   document.getElementById("gamePage").classList.add("hidden");
   document.getElementById("cadastroPage").classList.remove("hidden");
 }
 
-/* ================= INIT ================= */
 renderTeams();
 renderRanking();
 </script>
