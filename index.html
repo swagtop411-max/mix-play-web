@@ -42,7 +42,6 @@ body{
   font-size:18px;
   color:#facc15;
   font-weight:bold;
-  letter-spacing:1px;
 }
 
 @keyframes float{
@@ -51,7 +50,6 @@ body{
   100%{ transform:translateY(0); }
 }
 
-/* UI */
 button{
   padding:12px 22px;
   margin:6px;
@@ -60,10 +58,7 @@ button{
   font-size:16px;
   cursor:pointer;
   font-weight:bold;
-  transition:0.2s;
 }
-
-button:hover{ transform:scale(1.05); }
 
 .blue{ background:#22c55e; color:white; }
 .gray{ background:#ccc; color:black; }
@@ -88,13 +83,11 @@ input{
 <body>
 <div class="container">
 
-<!-- LOGO -->
 <div class="logo">
-  <img src="https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/IMG_20260319_232311_913.webp">
-  <h2>M&M Organização</h2>
+<img src="https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/IMG_20260319_232311_913.webp">
+<h2>M&M Organização</h2>
 </div>
 
-<!-- CADASTRO -->
 <div id="cadastroPage">
 <h1>🏐 Arena M&M</h1>
 
@@ -106,7 +99,6 @@ input{
 <button onclick="startGames()" class="blue">Iniciar Jogos</button>
 </div>
 
-<!-- JOGOS -->
 <div id="gamePage" class="hidden">
 
 <h1>🏐 Quadras</h1>
@@ -147,6 +139,12 @@ let stats = JSON.parse(localStorage.getItem("stats")) || {};
 let queue = [];
 let quadraA = [];
 let quadraB = [];
+
+// CONTROLE DE VITÓRIAS
+let streakA = 0;
+let streakB = 0;
+let lastWinnerA = null;
+let lastWinnerB = null;
 
 let timerInterval;
 let seconds = 0;
@@ -200,20 +198,8 @@ function startGames(){
 }
 
 function gerarQuadras(){
-
-  if(queue.length < 2){
-    document.getElementById("quadraA").innerText = "Aguardando times...";
-    document.getElementById("quadraB").innerText = "-";
-    return;
-  }
-
   quadraA = [queue.shift(), queue.shift()];
-
-  if(queue.length >= 2){
-    quadraB = [queue.shift(), queue.shift()];
-  } else {
-    quadraB = [];
-  }
+  quadraB = queue.length >= 2 ? [queue.shift(), queue.shift()] : [];
 
   renderAll();
 }
@@ -231,16 +217,44 @@ function win(quadra, teamNumber){
 
   saveData();
 
-  queue.push(loser);
+  let streak = quadra === "A" ? streakA : streakB;
+  let lastWinner = quadra === "A" ? lastWinnerA : lastWinnerB;
 
-  let newMatch = [winner];
-
-  if(queue.length){
-    newMatch.push(queue.shift());
+  if(lastWinner === winner){
+    streak++;
+  } else {
+    streak = 1;
+    lastWinner = winner;
   }
 
-  if(quadra === "A") quadraA = newMatch;
-  else quadraB = newMatch;
+  // SE GANHOU 2 → SAI
+  if(streak >= 2){
+    queue.push(winner);
+    queue.push(loser);
+
+    match = [queue.shift(), queue.shift()];
+
+    streak = 0;
+    lastWinner = null;
+  } else {
+    // normal: vencedor fica
+    queue.push(loser);
+
+    match = [winner];
+    if(queue.length){
+      match.push(queue.shift());
+    }
+  }
+
+  if(quadra === "A"){
+    quadraA = match;
+    streakA = streak;
+    lastWinnerA = lastWinner;
+  } else {
+    quadraB = match;
+    streakB = streak;
+    lastWinnerB = lastWinner;
+  }
 
   renderAll();
 }
@@ -282,7 +296,7 @@ function renderRanking(){
 
   ranking.forEach((t,i)=>{
     div.innerHTML += `<p ${i===0?"style='color:gold;font-weight:bold'":""}>
-    ${i+1}º ${t.name} | 🏆 ${t.wins} | ❌ ${t.losses} | 📊 ${t.saldo}
+    ${i+1}º ${t.name} | 🏆 ${t.wins} | ❌ ${t.losses}
     </p>`;
   });
 }
