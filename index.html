@@ -21,29 +21,29 @@ body{
   padding:20px;
 }
 
-.logo{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:8px;
-}
-
 .logo img{
   width:120px;
   border-radius:20px;
-  box-shadow:0 0 25px rgba(255,215,0,0.5);
+  margin-bottom:10px;
 }
 
-.blue{ background:#22c55e; }
-.gray{ background:#ccc; color:black; }
-
+/* UI */
 button{
-  padding:12px;
+  padding:10px 18px;
   margin:5px;
   border:none;
   border-radius:10px;
   font-weight:bold;
   cursor:pointer;
+}
+
+.blue{ background:#22c55e; color:white; }
+.gray{ background:#ccc; color:black; }
+
+input, select{
+  padding:8px;
+  border-radius:6px;
+  border:none;
 }
 
 .hidden{ display:none; }
@@ -74,33 +74,31 @@ button{
 
 <ul id="teamList"></ul>
 
-<h3>Quantidade de quadras:</h3>
+<h3>Quadras:</h3>
 <select id="numCourts">
   <option value="1">1 Quadra</option>
   <option value="2">2 Quadras</option>
 </select>
 
 <br><br>
-<button onclick="startGames()" class="blue">Iniciar</button>
+<button onclick="startGames()" class="blue">Iniciar Jogos</button>
 </div>
 
 <!-- JOGOS -->
 <div id="gamePage" class="hidden">
 
+<div id="quadraABox" class="card">
 <h2>Quadra A</h2>
-<div class="card">
-<h3 id="quadraA"></h3>
+<h3 id="quadraAText"></h3>
 <button onclick="win('A',1)" class="blue">Time 1 venceu</button>
 <button onclick="win('A',2)" class="blue">Time 2 venceu</button>
 </div>
 
-<div id="quadraBContainer">
+<div id="quadraBBox" class="card">
 <h2>Quadra B</h2>
-<div class="card">
-<h3 id="quadraB"></h3>
+<h3 id="quadraBText"></h3>
 <button onclick="win('B',1)" class="blue">Time 1 venceu</button>
 <button onclick="win('B',2)" class="blue">Time 2 venceu</button>
-</div>
 </div>
 
 <h2 id="timer">00:00</h2>
@@ -111,7 +109,7 @@ button{
 <h2>Ranking</h2>
 <div id="ranking"></div>
 
-<button onclick="goBack()" class="gray">Voltar</button>
+<button onclick="location.reload()" class="gray">Reiniciar</button>
 
 </div>
 
@@ -120,6 +118,7 @@ button{
 <script>
 let teams = [];
 let stats = {};
+
 let queue = [];
 let quadraA = [];
 let quadraB = [];
@@ -131,109 +130,157 @@ let numCourts = 1;
 
 /* CADASTRO */
 function addTeam(){
-  let name = teamInput.value.trim();
+  const name = document.getElementById("teamInput").value.trim();
   if(!name) return;
+
   teams.push(name);
   stats[name]={wins:0,losses:0};
-  teamInput.value="";
+
+  document.getElementById("teamInput").value="";
   renderTeams();
 }
 
 function renderTeams(){
-  teamList.innerHTML="";
+  const list = document.getElementById("teamList");
+  list.innerHTML="";
   teams.forEach((t,i)=>{
-    teamList.innerHTML+=`<li>${t}</li>`;
+    list.innerHTML += `<li>${t}</li>`;
   });
 }
 
 /* INICIAR */
 function startGames(){
-  numCourts = parseInt(numCourtsSelect());
-  if(teams.length<2) return alert("Poucos times");
+  numCourts = parseInt(document.getElementById("numCourts").value);
 
-  queue=[...teams];
-
-  cadastroPage.classList.add("hidden");
-  gamePage.classList.remove("hidden");
-
-  if(numCourts===1){
-    quadraBContainer.style.display="none";
+  if(teams.length < 2){
+    alert("Cadastre pelo menos 2 times");
+    return;
   }
 
-  gerar();
+  queue = [...teams];
+
+  document.getElementById("cadastroPage").classList.add("hidden");
+  document.getElementById("gamePage").classList.remove("hidden");
+
+  if(numCourts === 1){
+    document.getElementById("quadraBBox").style.display = "none";
+  }
+
+  gerarJogos();
   startTimer();
 }
 
-function numCourtsSelect(){
-  return document.getElementById("numCourts").value;
-}
+/* GERAR JOGOS */
+function gerarJogos(){
 
-/* GERAR */
-function gerar(){
-  quadraA=[queue.shift(),queue.shift()];
-  if(numCourts===2 && queue.length>=2){
-    quadraB=[queue.shift(),queue.shift()];
+  quadraA = queue.length >=2 ? [queue.shift(), queue.shift()] : [];
+
+  if(numCourts === 2 && queue.length >=2){
+    quadraB = [queue.shift(), queue.shift()];
+  } else {
+    quadraB = [];
   }
-  render();
+
+  renderAll();
 }
 
-/* WIN */
-function win(q,n){
-  let match = q==="A"?quadraA:quadraB;
-  if(match.length<2) return;
+/* RESULTADO */
+function win(quadra, num){
 
-  let winner = match[n-1];
-  let loser = match[n===1?1:0];
+  let match = quadra==="A"?quadraA:quadraB;
+  if(match.length < 2) return;
+
+  let winner = match[num-1];
+  let loser = match[num===1?1:0];
 
   stats[winner].wins++;
   stats[loser].losses++;
 
-  let streak = q==="A"?streakA:streakB;
-  let last = q==="A"?lastA:lastB;
+  let streak = quadra==="A"?streakA:streakB;
+  let last = quadra==="A"?lastA:lastB;
 
-  if(last===winner){streak++} else{streak=1; last=winner;}
-
-  if(streak>=2){
-    queue.push(winner,loser);
-    match=[queue.shift(),queue.shift()];
-    streak=0; last=null;
-  }else{
-    queue.push(loser);
-    match=[winner, queue.shift()];
+  if(last === winner){
+    streak++;
+  } else {
+    streak = 1;
+    last = winner;
   }
 
-  if(q==="A"){quadraA=match; streakA=streak; lastA=last;}
-  else{quadraB=match; streakB=streak; lastB=last;}
+  if(streak >= 2){
+    queue.push(winner, loser);
+    match = queue.length>=2 ? [queue.shift(), queue.shift()] : [];
+    streak = 0;
+    last = null;
+  } else {
+    queue.push(loser);
+    match = [winner];
+    if(queue.length) match.push(queue.shift());
+  }
 
-  render();
+  if(quadra==="A"){
+    quadraA = match;
+    streakA = streak;
+    lastA = last;
+  } else {
+    quadraB = match;
+    streakB = streak;
+    lastB = last;
+  }
+
+  renderAll();
 }
 
 /* RENDER */
-function render(){
-  quadraA.innerText=quadraA.join(" VS ");
-  quadraB.innerText=quadraB.join(" VS ");
-  
-  queueDiv.innerHTML="";
-  queue.forEach((t,i)=> queueDiv.innerHTML+=`<p>${i+1} - ${t}</p>`);
+function renderAll(){
+  renderQuadras();
+  renderQueue();
+  renderRanking();
+}
 
-  let ranking=Object.keys(stats).sort((a,b)=>stats[b].wins-stats[a].wins);
-  rankingDiv.innerHTML="";
-  ranking.forEach(t=>{
-    rankingDiv.innerHTML+=`<p>${t} | ${stats[t].wins}V</p>`;
+function renderQuadras(){
+  document.getElementById("quadraAText").innerText =
+    quadraA.length===2 ? quadraA.join(" 🆚 ") : "Aguardando...";
+
+  document.getElementById("quadraBText").innerText =
+    quadraB.length===2 ? quadraB.join(" 🆚 ") : "—";
+}
+
+function renderQueue(){
+  const div = document.getElementById("queue");
+  div.innerHTML = "";
+
+  if(queue.length === 0){
+    div.innerHTML = "<p>Sem fila</p>";
+    return;
+  }
+
+  queue.forEach((t,i)=>{
+    div.innerHTML += `<p>${i+1}º - ${t}</p>`;
+  });
+}
+
+function renderRanking(){
+  const div = document.getElementById("ranking");
+  div.innerHTML="";
+
+  const ranking = Object.keys(stats).sort((a,b)=>stats[b].wins - stats[a].wins);
+
+  ranking.forEach((t,i)=>{
+    div.innerHTML += `<p ${i===0?"style='color:gold;font-weight:bold'":""}>
+      ${i+1}º ${t} | 🏆 ${stats[t].wins} | ❌ ${stats[t].losses}
+    </p>`;
   });
 }
 
 /* TIMER */
-let s=0;
+let sec=0;
 function startTimer(){
   setInterval(()=>{
-    s++;
-    timer.innerText=Math.floor(s/60)+":"+("0"+s%60).slice(-2);
+    sec++;
+    let m = String(Math.floor(sec/60)).padStart(2,"0");
+    let s = String(sec%60).padStart(2,"0");
+    document.getElementById("timer").innerText = m+":"+s;
   },1000);
-}
-
-function goBack(){
-  location.reload();
 }
 </script>
 
