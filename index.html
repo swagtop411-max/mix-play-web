@@ -10,69 +10,73 @@ body{
   margin:0;
   font-family:Arial;
   color:white;
-  text-align:center;
   background:url("https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/file_000000009aac71f5a38536be785d2478.png") no-repeat center center fixed;
   background-size:cover;
 }
 
-.container{
-  background:rgba(0,0,0,0.75);
-  min-height:100vh;
-  padding:20px;
+/* ================= HEADER FIXO ================= */
+.header{
+  position:fixed;
+  top:0;
+  width:100%;
+  background:rgba(0,0,0,0.85);
+  backdrop-filter:blur(10px);
+  z-index:999;
+  padding:10px 0;
+  text-align:center;
+  box-shadow:0 4px 20px rgba(0,0,0,0.7);
 }
 
-/* ================= LOGO PREMIUM ================= */
+/* LOGO */
 .logo{
-  position:relative;
-  margin-bottom:20px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  animation:logoEntry 1.2s ease-out forwards;
 }
 
-/* halo de destaque */
-.logo::before{
-  content:"";
-  position:absolute;
-  width:200px;
-  height:200px;
-  background:radial-gradient(circle, rgba(255,215,0,0.5), transparent);
-  top:50%;
-  left:50%;
-  transform:translate(-50%, -50%);
-  filter:blur(20px);
-  z-index:0;
+/* animação de entrada */
+@keyframes logoEntry{
+  0%{
+    opacity:0;
+    transform:translateY(-30px) scale(0.8);
+  }
+  100%{
+    opacity:1;
+    transform:translateY(0) scale(1);
+  }
 }
 
 /* imagem */
 .logo img{
-  width:160px; /* 🔥 maior */
-  border-radius:25px;
-  position:relative;
-  z-index:1;
-
-  /* brilho */
-  box-shadow:
-    0 0 25px rgba(255,215,0,0.6),
-    0 10px 30px rgba(0,0,0,0.8);
-
-  /* animação melhorada */
+  width:130px;
+  border-radius:20px;
+  box-shadow:0 0 25px rgba(255,215,0,0.6);
   animation:float 4s ease-in-out infinite;
 }
 
 /* nome */
 .logo h2{
-  margin-top:8px;
-  font-size:18px;
+  margin:5px 0 0;
   color:#facc15;
-  letter-spacing:1px;
 }
 
-/* animação suave e visível */
+/* flutuar */
 @keyframes float{
-  0%   { transform:translateY(0) scale(1); }
-  50%  { transform:translateY(-12px) scale(1.03); }
-  100% { transform:translateY(0) scale(1); }
+  0%{ transform:translateY(0); }
+  50%{ transform:translateY(-10px); }
+  100%{ transform:translateY(0); }
 }
 
-/* ================= UI ================= */
+/* ================= CONTEÚDO ================= */
+.container{
+  padding:140px 20px 20px; /* espaço pro header fixo */
+  background:rgba(0,0,0,0.75);
+  min-height:100vh;
+  text-align:center;
+}
+
+/* UI */
 button{
   padding:10px 18px;
   margin:5px;
@@ -103,13 +107,16 @@ input, select{
 </head>
 
 <body>
-<div class="container">
 
-<!-- LOGO -->
-<div class="logo">
-  <img src="https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/IMG_20260319_232311_913.webp">
-  <h2>M&M Organização</h2>
+<!-- HEADER FIXO -->
+<div class="header">
+  <div class="logo">
+    <img src="https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/IMG_20260319_232311_913.webp">
+    <h2>M&M Organização</h2>
+  </div>
 </div>
+
+<div class="container">
 
 <!-- CADASTRO -->
 <div id="cadastroPage">
@@ -155,7 +162,7 @@ input, select{
 <h2>Ranking</h2>
 <div id="ranking"></div>
 
-<button onclick="resetAll()" class="gray">Resetar Dados</button>
+<button onclick="resetAll()" class="gray">Resetar</button>
 
 </div>
 
@@ -172,19 +179,17 @@ let quadraB = [];
 let streakA=0, streakB=0;
 let lastA=null, lastB=null;
 
-let numCourts = 1;
-
 function saveData(){
   localStorage.setItem("teams", JSON.stringify(teams));
   localStorage.setItem("stats", JSON.stringify(stats));
 }
 
 function addTeam(){
-  const name = teamInput.value.trim();
+  let name = teamInput.value.trim();
   if(!name) return;
 
   teams.push(name);
-  stats[name] = {wins:0, losses:0};
+  stats[name]={wins:0,losses:0};
 
   teamInput.value="";
   saveData();
@@ -193,98 +198,87 @@ function addTeam(){
 
 function renderTeams(){
   teamList.innerHTML="";
-  teams.forEach(t=>{
-    teamList.innerHTML += `<li>${t}</li>`;
-  });
+  teams.forEach(t=> teamList.innerHTML+=`<li>${t}</li>`);
 }
 
 function startGames(){
-  numCourts = parseInt(numCourts.value);
+  let numCourts = parseInt(numCourts.value);
 
-  if(teams.length < 2){
-    alert("Cadastre pelo menos 2 times");
-    return;
-  }
+  if(teams.length<2) return alert("Poucos times");
 
-  queue = [...teams];
+  queue=[...teams];
 
   cadastroPage.classList.add("hidden");
   gamePage.classList.remove("hidden");
 
-  if(numCourts === 1){
-    quadraBBox.style.display = "none";
+  if(numCourts===1){
+    quadraBBox.style.display="none";
   }
 
-  gerarJogos();
+  gerar();
   startTimer();
 }
 
-function gerarJogos(){
-  quadraA = queue.length>=2 ? [queue.shift(), queue.shift()] : [];
-  quadraB = (numCourts===2 && queue.length>=2) ? [queue.shift(), queue.shift()] : [];
-  renderAll();
+function gerar(){
+  quadraA=[queue.shift(),queue.shift()];
+  quadraB=queue.length>=2?[queue.shift(),queue.shift()]:[];
+  render();
 }
 
 function win(q,n){
-  let match = q==="A"?quadraA:quadraB;
-  if(match.length<2) return;
+  let match=q==="A"?quadraA:quadraB;
 
-  let winner = match[n-1];
-  let loser = match[n===1?1:0];
+  let winner=match[n-1];
+  let loser=match[n===1?1:0];
 
   stats[winner].wins++;
   stats[loser].losses++;
   saveData();
 
-  let streak = q==="A"?streakA:streakB;
-  let last = q==="A"?lastA:lastB;
+  let streak=q==="A"?streakA:streakB;
+  let last=q==="A"?lastA:lastB;
 
   if(last===winner){streak++} else{streak=1; last=winner;}
 
   if(streak>=2){
     queue.push(winner,loser);
-    match = queue.length>=2 ? [queue.shift(), queue.shift()] : [];
+    match=[queue.shift(),queue.shift()];
     streak=0; last=null;
   }else{
     queue.push(loser);
-    match=[winner];
-    if(queue.length) match.push(queue.shift());
+    match=[winner,queue.shift()];
   }
 
   if(q==="A"){quadraA=match; streakA=streak; lastA=last;}
   else{quadraB=match; streakB=streak; lastB=last;}
 
-  renderAll();
+  render();
 }
 
-function renderAll(){
-  quadraAText.innerText = quadraA.length===2 ? quadraA.join(" 🆚 ") : "Aguardando...";
-  quadraBText.innerText = quadraB.length===2 ? quadraB.join(" 🆚 ") : "-";
+function render(){
+  quadraAText.innerText=quadraA.join(" 🆚 ");
+  quadraBText.innerText=quadraB.join(" 🆚 ");
 
   queue.innerHTML="";
-  queue.forEach((t,i)=> queue.innerHTML+=`<p>${i+1}º - ${t}</p>`);
+  queue.forEach((t,i)=> queue.innerHTML+=`<p>${i+1}º ${t}</p>`);
 
-  let ranking = Object.keys(stats).sort((a,b)=>stats[b].wins-stats[a].wins);
+  let ranking=Object.keys(stats).sort((a,b)=>stats[b].wins-stats[a].wins);
   rankingDiv.innerHTML="";
-  ranking.forEach((t,i)=>{
-    rankingDiv.innerHTML += `<p ${i===0?"style='color:gold'":""}>
-      ${i+1}º ${t} | 🏆 ${stats[t].wins}
-    </p>`;
-  });
+  ranking.forEach(t=> rankingDiv.innerHTML+=`<p>${t} - ${stats[t].wins} vitórias</p>`);
 }
 
 let sec=0;
 function startTimer(){
   setInterval(()=>{
     sec++;
-    timer.innerText =
+    timer.innerText=
       String(Math.floor(sec/60)).padStart(2,"0")+":"+
       String(sec%60).padStart(2,"0");
   },1000);
 }
 
 function resetAll(){
-  if(confirm("Apagar dados?")){
+  if(confirm("Resetar?")){
     localStorage.clear();
     location.reload();
   }
