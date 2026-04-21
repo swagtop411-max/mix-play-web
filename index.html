@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arena M&M</title>
+<title>M&M Organização</title>
 
 <style>
 body{
@@ -16,6 +16,12 @@ body{
 }
 
 .hidden{ display:none; }
+
+.container{
+  background:rgba(0,0,0,0.6);
+  min-height:100vh;
+  padding:20px;
+}
 
 /* BLOQUEIO */
 #lockPage{
@@ -38,13 +44,7 @@ body{
   box-shadow:0 0 25px gold;
 }
 
-/* APP */
-.container{
-  background:rgba(0,0,0,0.6);
-  min-height:100vh;
-  padding:20px;
-}
-
+/* UI */
 button{
   padding:10px;
   margin:5px;
@@ -68,11 +68,12 @@ button{
 
 <body>
 
-<!-- BLOQUEIO -->
+<!-- 🔒 BLOQUEIO -->
 <div id="lockPage">
   <div class="lock-box">
     <img src="https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/IMG_20260319_232311_913.webp">
     <h2>M&M Organização</h2>
+
     <input type="password" id="passwordInput" placeholder="Senha">
     <br><br>
     <button onclick="unlock()">Entrar</button>
@@ -80,7 +81,7 @@ button{
   </div>
 </div>
 
-<!-- APP -->
+<!-- 🔓 APP -->
 <div id="app" class="hidden">
 <div class="container">
 
@@ -125,13 +126,17 @@ button{
 <h2>Ranking</h2>
 <div id="ranking"></div>
 
+<!-- 🔄 RESET -->
+<button onclick="resetAll()" class="gray">🔄 Resetar Tudo</button>
+
 </div>
 
 </div>
 </div>
 
 <script>
-/* ================= BLOQUEIO ================= */
+
+/* 🔒 BLOQUEIO */
 function unlock(){
   const senha = document.getElementById("passwordInput").value;
   if(senha === "147580"){
@@ -142,7 +147,7 @@ function unlock(){
   }
 }
 
-/* ================= DADOS ================= */
+/* DADOS */
 let teams = JSON.parse(localStorage.getItem("teams")) || [];
 let stats = JSON.parse(localStorage.getItem("stats")) || {};
 
@@ -155,13 +160,13 @@ let lastA = null, lastB = null;
 
 let interval = null;
 
-/* ================= SAVE ================= */
+/* SAVE */
 function save(){
   localStorage.setItem("teams", JSON.stringify(teams));
   localStorage.setItem("stats", JSON.stringify(stats));
 }
 
-/* ================= CADASTRO ================= */
+/* CADASTRO */
 function addTeam(){
   const input = document.getElementById("teamInput");
   const name = input.value.trim();
@@ -178,12 +183,10 @@ function addTeam(){
 function renderTeams(){
   const list = document.getElementById("teamList");
   list.innerHTML="";
-  teams.forEach(t => {
-    list.innerHTML += `<li>${t}</li>`;
-  });
+  teams.forEach(t => list.innerHTML += `<li>${t}</li>`);
 }
 
-/* ================= START ================= */
+/* START */
 function startGames(){
   const numCourts = parseInt(document.getElementById("numCourts").value);
 
@@ -197,24 +200,21 @@ function startGames(){
   document.getElementById("cadastroPage").classList.add("hidden");
   document.getElementById("gamePage").classList.remove("hidden");
 
-  if(numCourts === 1){
-    document.getElementById("quadraBBox").style.display="none";
-  } else {
-    document.getElementById("quadraBBox").style.display="block";
-  }
+  document.getElementById("quadraBBox").style.display =
+    numCourts === 1 ? "none" : "block";
 
   gerarJogos(numCourts);
   startTimer();
 }
 
-/* ================= GERAR ================= */
+/* GERAR */
 function gerarJogos(numCourts){
   quadraA = queue.length>=2 ? [queue.shift(), queue.shift()] : [];
   quadraB = (numCourts===2 && queue.length>=2) ? [queue.shift(), queue.shift()] : [];
   render();
 }
 
-/* ================= WIN ================= */
+/* WIN (ganha 2 sai) */
 function win(q,n){
 
   let match = q==="A"?quadraA:quadraB;
@@ -230,38 +230,27 @@ function win(q,n){
   let streak = q==="A"?streakA:streakB;
   let last = q==="A"?lastA:lastB;
 
-  if(last === winner){
-    streak++;
-  } else {
-    streak = 1;
-    last = winner;
-  }
+  if(last === winner){ streak++; }
+  else{ streak=1; last=winner; }
 
   if(streak >= 2){
     queue.push(winner, loser);
     match = queue.length>=2 ? [queue.shift(), queue.shift()] : [];
     streak = 0;
     last = null;
-  } else {
+  }else{
     queue.push(loser);
     match = [winner];
     if(queue.length) match.push(queue.shift());
   }
 
-  if(q==="A"){
-    quadraA = match;
-    streakA = streak;
-    lastA = last;
-  } else {
-    quadraB = match;
-    streakB = streak;
-    lastB = last;
-  }
+  if(q==="A"){ quadraA=match; streakA=streak; lastA=last; }
+  else{ quadraB=match; streakB=streak; lastB=last; }
 
   render();
 }
 
-/* ================= RENDER ================= */
+/* RENDER */
 function render(){
 
   document.getElementById("quadraAText").innerText =
@@ -272,9 +261,7 @@ function render(){
 
   const qDiv = document.getElementById("queue");
   qDiv.innerHTML="";
-  queue.forEach((t,i)=>{
-    qDiv.innerHTML += `<p>${i+1}º ${t}</p>`;
-  });
+  queue.forEach((t,i)=> qDiv.innerHTML += `<p>${i+1}º ${t}</p>`);
 
   const rDiv = document.getElementById("ranking");
   rDiv.innerHTML="";
@@ -286,7 +273,7 @@ function render(){
   });
 }
 
-/* ================= TIMER ================= */
+/* TIMER */
 function startTimer(){
   if(interval) clearInterval(interval);
 
@@ -299,8 +286,35 @@ function startTimer(){
   },1000);
 }
 
+/* RESET */
+function resetAll(){
+
+  if(!confirm("Apagar todos os dados?")) return;
+
+  teams = [];
+  stats = {};
+  queue = [];
+  quadraA = [];
+  quadraB = [];
+
+  streakA = 0;
+  streakB = 0;
+  lastA = null;
+  lastB = null;
+
+  localStorage.removeItem("teams");
+  localStorage.removeItem("stats");
+
+  renderTeams();
+  render();
+
+  document.getElementById("gamePage").classList.add("hidden");
+  document.getElementById("cadastroPage").classList.remove("hidden");
+}
+
 /* INIT */
 renderTeams();
+
 </script>
 
 </body>
