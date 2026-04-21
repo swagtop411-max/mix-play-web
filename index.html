@@ -16,65 +16,26 @@ body{
 }
 
 .container{
-  background:rgba(0,0,0,0.75);
+  background:rgba(0,0,0,0.6);
   min-height:100vh;
   padding:20px;
 }
 
-/* ================= LOGO PREMIUM ================= */
-.logo{
-  position:relative;
-  margin-bottom:20px;
-}
-
-/* halo de destaque */
-.logo::before{
-  content:"";
-  position:absolute;
-  width:200px;
-  height:200px;
-  background:radial-gradient(circle, rgba(255,215,0,0.5), transparent);
-  top:50%;
-  left:50%;
-  transform:translate(-50%, -50%);
-  filter:blur(20px);
-  z-index:0;
-}
-
-/* imagem */
 .logo img{
-  width:160px; /* 🔥 maior */
-  border-radius:25px;
-  position:relative;
-  z-index:1;
-
-  /* brilho */
-  box-shadow:
-    0 0 25px rgba(255,215,0,0.6),
-    0 10px 30px rgba(0,0,0,0.8);
-
-  /* animação melhorada */
-  animation:float 4s ease-in-out infinite;
+  width:150px;
+  border-radius:20px;
+  box-shadow:0 0 30px gold;
+  animation:float 4s infinite;
 }
 
-/* nome */
-.logo h2{
-  margin-top:8px;
-  font-size:18px;
-  color:#facc15;
-  letter-spacing:1px;
-}
-
-/* animação suave e visível */
 @keyframes float{
-  0%   { transform:translateY(0) scale(1); }
-  50%  { transform:translateY(-12px) scale(1.03); }
-  100% { transform:translateY(0) scale(1); }
+  0%{transform:translateY(0)}
+  50%{transform:translateY(-10px)}
+  100%{transform:translateY(0)}
 }
 
-/* ================= UI ================= */
 button{
-  padding:10px 18px;
+  padding:10px;
   margin:5px;
   border:none;
   border-radius:10px;
@@ -84,12 +45,6 @@ button{
 
 .blue{ background:#22c55e; color:white; }
 .gray{ background:#ccc; color:black; }
-
-input, select{
-  padding:8px;
-  border-radius:6px;
-  border:none;
-}
 
 .hidden{ display:none; }
 
@@ -105,46 +60,38 @@ input, select{
 <body>
 <div class="container">
 
-<!-- LOGO -->
 <div class="logo">
-  <img src="https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/IMG_20260319_232311_913.webp">
-  <h2>M&M Organização</h2>
+<img src="https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/IMG_20260319_232311_913.webp">
+<h2>M&M Organização</h2>
 </div>
 
-<!-- CADASTRO -->
 <div id="cadastroPage">
-<h1>🏐 Arena M&M</h1>
-
 <input id="teamInput" placeholder="Nome do time">
 <button onclick="addTeam()" class="blue">Adicionar</button>
-
 <ul id="teamList"></ul>
 
-<h3>Quadras:</h3>
 <select id="numCourts">
-  <option value="1">1 Quadra</option>
-  <option value="2">2 Quadras</option>
+<option value="1">1 Quadra</option>
+<option value="2">2 Quadras</option>
 </select>
 
-<br><br>
-<button onclick="startGames()" class="blue">Iniciar Jogos</button>
+<button onclick="startGames()" class="blue">Iniciar</button>
 </div>
 
-<!-- JOGOS -->
 <div id="gamePage" class="hidden">
 
 <div class="card">
 <h2>Quadra A</h2>
 <h3 id="quadraAText"></h3>
-<button onclick="win('A',1)" class="blue">Time 1 venceu</button>
-<button onclick="win('A',2)" class="blue">Time 2 venceu</button>
+<button onclick="win('A',1)">Time 1 venceu</button>
+<button onclick="win('A',2)">Time 2 venceu</button>
 </div>
 
 <div id="quadraBBox" class="card">
 <h2>Quadra B</h2>
 <h3 id="quadraBText"></h3>
-<button onclick="win('B',1)" class="blue">Time 1 venceu</button>
-<button onclick="win('B',2)" class="blue">Time 2 venceu</button>
+<button onclick="win('B',1)">Time 1 venceu</button>
+<button onclick="win('B',2)">Time 2 venceu</button>
 </div>
 
 <h2 id="timer">00:00</h2>
@@ -154,8 +101,6 @@ input, select{
 
 <h2>Ranking</h2>
 <div id="ranking"></div>
-
-<button onclick="resetAll()" class="gray">Resetar Dados</button>
 
 </div>
 
@@ -169,125 +114,124 @@ let queue = [];
 let quadraA = [];
 let quadraB = [];
 
-let streakA=0, streakB=0;
-let lastA=null, lastB=null;
+let interval = null;
 
-let numCourts = 1;
-
-function saveData(){
-  localStorage.setItem("teams", JSON.stringify(teams));
-  localStorage.setItem("stats", JSON.stringify(stats));
+/* ================= SALVAR ================= */
+function save(){
+localStorage.setItem("teams",JSON.stringify(teams));
+localStorage.setItem("stats",JSON.stringify(stats));
 }
 
+/* ================= CADASTRO ================= */
 function addTeam(){
-  const name = teamInput.value.trim();
-  if(!name) return;
+let name = document.getElementById("teamInput").value.trim();
+if(!name) return;
 
-  teams.push(name);
-  stats[name] = {wins:0, losses:0};
+teams.push(name);
+stats[name]={wins:0,losses:0};
 
-  teamInput.value="";
-  saveData();
-  renderTeams();
+document.getElementById("teamInput").value="";
+save();
+renderTeams();
 }
 
 function renderTeams(){
-  teamList.innerHTML="";
-  teams.forEach(t=>{
-    teamList.innerHTML += `<li>${t}</li>`;
-  });
+let list = document.getElementById("teamList");
+list.innerHTML="";
+teams.forEach(t=> list.innerHTML+=`<li>${t}</li>`);
 }
 
+/* ================= INICIAR ================= */
 function startGames(){
-  numCourts = parseInt(numCourts.value);
+let numCourts = parseInt(document.getElementById("numCourts").value);
 
-  if(teams.length < 2){
-    alert("Cadastre pelo menos 2 times");
-    return;
-  }
-
-  queue = [...teams];
-
-  cadastroPage.classList.add("hidden");
-  gamePage.classList.remove("hidden");
-
-  if(numCourts === 1){
-    quadraBBox.style.display = "none";
-  }
-
-  gerarJogos();
-  startTimer();
+if(teams.length<2){
+alert("Cadastre pelo menos 2 times");
+return;
 }
 
-function gerarJogos(){
-  quadraA = queue.length>=2 ? [queue.shift(), queue.shift()] : [];
-  quadraB = (numCourts===2 && queue.length>=2) ? [queue.shift(), queue.shift()] : [];
-  renderAll();
+queue=[...teams];
+
+document.getElementById("cadastroPage").classList.add("hidden");
+document.getElementById("gamePage").classList.remove("hidden");
+
+if(numCourts===1){
+document.getElementById("quadraBBox").style.display="none";
 }
 
+gerar(numCourts);
+startTimer();
+}
+
+/* ================= GERAR ================= */
+function gerar(numCourts){
+quadraA=[queue.shift(),queue.shift()];
+
+if(numCourts===2 && queue.length>=2){
+quadraB=[queue.shift(),queue.shift()];
+}else{
+quadraB=[];
+}
+
+render();
+}
+
+/* ================= RESULTADO ================= */
 function win(q,n){
-  let match = q==="A"?quadraA:quadraB;
-  if(match.length<2) return;
+let match = q==="A"?quadraA:quadraB;
+if(match.length<2) return;
 
-  let winner = match[n-1];
-  let loser = match[n===1?1:0];
+let winner = match[n-1];
+let loser = match[n===1?1:0];
 
-  stats[winner].wins++;
-  stats[loser].losses++;
-  saveData();
+stats[winner].wins++;
+stats[loser].losses++;
+save();
 
-  let streak = q==="A"?streakA:streakB;
-  let last = q==="A"?lastA:lastB;
+queue.push(loser);
+match=[winner, queue.shift()];
 
-  if(last===winner){streak++} else{streak=1; last=winner;}
+if(q==="A") quadraA=match;
+else quadraB=match;
 
-  if(streak>=2){
-    queue.push(winner,loser);
-    match = queue.length>=2 ? [queue.shift(), queue.shift()] : [];
-    streak=0; last=null;
-  }else{
-    queue.push(loser);
-    match=[winner];
-    if(queue.length) match.push(queue.shift());
-  }
-
-  if(q==="A"){quadraA=match; streakA=streak; lastA=last;}
-  else{quadraB=match; streakB=streak; lastB=last;}
-
-  renderAll();
+render();
 }
 
-function renderAll(){
-  quadraAText.innerText = quadraA.length===2 ? quadraA.join(" 🆚 ") : "Aguardando...";
-  quadraBText.innerText = quadraB.length===2 ? quadraB.join(" 🆚 ") : "-";
+/* ================= RENDER ================= */
+function render(){
 
-  queue.innerHTML="";
-  queue.forEach((t,i)=> queue.innerHTML+=`<p>${i+1}º - ${t}</p>`);
+document.getElementById("quadraAText").innerText =
+quadraA.length===2 ? quadraA.join(" 🆚 ") : "-";
 
-  let ranking = Object.keys(stats).sort((a,b)=>stats[b].wins-stats[a].wins);
-  rankingDiv.innerHTML="";
-  ranking.forEach((t,i)=>{
-    rankingDiv.innerHTML += `<p ${i===0?"style='color:gold'":""}>
-      ${i+1}º ${t} | 🏆 ${stats[t].wins}
-    </p>`;
-  });
+document.getElementById("quadraBText").innerText =
+quadraB.length===2 ? quadraB.join(" 🆚 ") : "-";
+
+/* FILA */
+let qDiv = document.getElementById("queue");
+qDiv.innerHTML="";
+queue.forEach((t,i)=> qDiv.innerHTML+=`<p>${i+1}º ${t}</p>`);
+
+/* RANKING */
+let rDiv = document.getElementById("ranking");
+rDiv.innerHTML="";
+
+let ranking = Object.keys(stats).sort((a,b)=>stats[b].wins-stats[a].wins);
+ranking.forEach((t,i)=>{
+rDiv.innerHTML+=`<p>${i+1}º ${t} - ${stats[t].wins} vitórias</p>`;
+});
 }
+
+/* ================= TIMER ================= */
+function startTimer(){
+if(interval) clearInterval(interval);
 
 let sec=0;
-function startTimer(){
-  setInterval(()=>{
-    sec++;
-    timer.innerText =
-      String(Math.floor(sec/60)).padStart(2,"0")+":"+
-      String(sec%60).padStart(2,"0");
-  },1000);
-}
-
-function resetAll(){
-  if(confirm("Apagar dados?")){
-    localStorage.clear();
-    location.reload();
-  }
+interval = setInterval(()=>{
+sec++;
+document.getElementById("timer").innerText =
+String(Math.floor(sec/60)).padStart(2,"0")+":"+
+String(sec%60).padStart(2,"0");
+},1000);
 }
 
 renderTeams();
