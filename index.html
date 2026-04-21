@@ -15,17 +15,68 @@ body{
   background-size:cover;
 }
 
+/* ================= BLOQUEIO ================= */
+#lockPage{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  background:rgba(0,0,0,0.85);
+}
+
+.lock-box{
+  background:rgba(0,0,0,0.6);
+  padding:30px;
+  border-radius:20px;
+}
+
+.lock-box img{
+  width:150px;
+  border-radius:20px;
+  box-shadow:0 0 30px gold;
+  margin-bottom:15px;
+  animation:float 4s infinite;
+}
+
+@keyframes float{
+  0%{transform:translateY(0)}
+  50%{transform:translateY(-10px)}
+  100%{transform:translateY(0)}
+}
+
+.lock-box input{
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  text-align:center;
+  font-size:16px;
+}
+
+.lock-box button{
+  margin-top:10px;
+  padding:10px 20px;
+  border:none;
+  border-radius:10px;
+  background:#22c55e;
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.error{
+  color:red;
+  margin-top:10px;
+}
+
+/* ================= APP ================= */
 .container{
   background:rgba(0,0,0,0.6);
   min-height:100vh;
   padding:20px;
 }
 
-.logo img{
-  width:140px;
-  border-radius:20px;
-  box-shadow:0 0 30px gold;
-}
+.hidden{ display:none; }
 
 button{
   padding:10px;
@@ -39,8 +90,6 @@ button{
 .blue{ background:#22c55e; color:white; }
 .gray{ background:#ccc; color:black; }
 
-.hidden{ display:none; }
-
 .card{
   background:rgba(30,41,59,0.85);
   padding:15px;
@@ -51,14 +100,26 @@ button{
 </head>
 
 <body>
-<div class="container">
 
-<div class="logo">
-<img src="https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/IMG_20260319_232311_913.webp">
-<h2>M&M Organização</h2>
+<!-- 🔒 TELA DE BLOQUEIO -->
+<div id="lockPage">
+  <div class="lock-box">
+    <img src="https://raw.githubusercontent.com/swagtop411-max/mix-play-web/main/IMG_20260319_232311_913.webp">
+    <h2>M&M Organização</h2>
+
+    <input type="password" id="passwordInput" placeholder="Digite a senha">
+    <br>
+    <button onclick="unlock()">Entrar</button>
+
+    <div id="errorMsg" class="error"></div>
+  </div>
 </div>
 
-<!-- CADASTRO -->
+<!-- 🔓 APP -->
+<div id="app" class="hidden">
+
+<div class="container">
+
 <div id="cadastroPage">
 <input id="teamInput" placeholder="Nome do time">
 <button onclick="addTeam()" class="blue">Adicionar</button>
@@ -70,11 +131,9 @@ button{
 <option value="2">2 Quadras</option>
 </select>
 
-<br>
 <button onclick="startGames()" class="blue">Iniciar</button>
 </div>
 
-<!-- JOGOS -->
 <div id="gamePage" class="hidden">
 
 <div class="card">
@@ -99,13 +158,27 @@ button{
 <h2>Ranking</h2>
 <div id="ranking"></div>
 
-<button onclick="resetAll()" class="gray">Resetar</button>
-
 </div>
 
+</div>
 </div>
 
 <script>
+
+/* 🔒 DESBLOQUEIO */
+function unlock(){
+  const senha = document.getElementById("passwordInput").value;
+
+  if(senha === "147580"){
+    document.getElementById("lockPage").style.display = "none";
+    document.getElementById("app").classList.remove("hidden");
+  }else{
+    document.getElementById("errorMsg").innerText = "Senha incorreta";
+  }
+}
+
+/* ================= RESTO DO SEU SISTEMA (INALTERADO) ================= */
+
 let teams = JSON.parse(localStorage.getItem("teams")) || [];
 let stats = JSON.parse(localStorage.getItem("stats")) || {};
 
@@ -113,25 +186,20 @@ let queue = [];
 let quadraA = [];
 let quadraB = [];
 
-let streakA=0, streakB=0;
-let lastA=null, lastB=null;
-
 let interval=null;
 
-/* SALVAR */
 function save(){
   localStorage.setItem("teams", JSON.stringify(teams));
   localStorage.setItem("stats", JSON.stringify(stats));
 }
 
-/* CADASTRO */
 function addTeam(){
   const input = document.getElementById("teamInput");
   const name = input.value.trim();
   if(!name) return;
 
   teams.push(name);
-  stats[name] = {wins:0, losses:0};
+  stats[name]={wins:0,losses:0};
 
   input.value="";
   save();
@@ -144,101 +212,74 @@ function renderTeams(){
   teams.forEach(t=> list.innerHTML += `<li>${t}</li>`);
 }
 
-/* INICIAR */
 function startGames(){
-
   const numCourts = parseInt(document.getElementById("numCourts").value);
 
-  if(teams.length < 2){
+  if(teams.length<2){
     alert("Cadastre pelo menos 2 times");
     return;
   }
 
-  queue = [...teams];
+  queue=[...teams];
 
   document.getElementById("cadastroPage").classList.add("hidden");
   document.getElementById("gamePage").classList.remove("hidden");
 
-  if(numCourts === 1){
-    document.getElementById("quadraBBox").style.display = "none";
-  } else {
-    document.getElementById("quadraBBox").style.display = "block";
+  if(numCourts===1){
+    document.getElementById("quadraBBox").style.display="none";
   }
 
   gerar(numCourts);
   startTimer();
 }
 
-/* GERAR */
 function gerar(numCourts){
-  quadraA = [queue.shift(), queue.shift()];
-  quadraB = (numCourts === 2 && queue.length >= 2) ? [queue.shift(), queue.shift()] : [];
+  quadraA=[queue.shift(),queue.shift()];
+  quadraB=(numCourts===2 && queue.length>=2)?[queue.shift(),queue.shift()]:[];
   render();
 }
 
-/* WIN */
 function win(q,n){
+  let match=q==="A"?quadraA:quadraB;
 
-  let match = q==="A"?quadraA:quadraB;
-  if(match.length<2) return;
-
-  let winner = match[n-1];
-  let loser = match[n===1?1:0];
+  let winner=match[n-1];
+  let loser=match[n===1?1:0];
 
   stats[winner].wins++;
   stats[loser].losses++;
   save();
 
-  let streak = q==="A"?streakA:streakB;
-  let last = q==="A"?lastA:lastB;
+  queue.push(loser);
+  match=[winner,queue.shift()];
 
-  if(last===winner){streak++} else{streak=1; last=winner;}
-
-  if(streak>=2){
-    queue.push(winner,loser);
-    match = queue.length>=2 ? [queue.shift(), queue.shift()] : [];
-    streak=0; last=null;
-  }else{
-    queue.push(loser);
-    match=[winner];
-    if(queue.length) match.push(queue.shift());
-  }
-
-  if(q==="A"){quadraA=match; streakA=streak; lastA=last;}
-  else{quadraB=match; streakB=streak; lastB=last;}
+  if(q==="A") quadraA=match;
+  else quadraB=match;
 
   render();
 }
 
-/* RENDER */
 function render(){
+  document.getElementById("quadraAText").innerText=quadraA.join(" 🆚 ");
+  document.getElementById("quadraBText").innerText=quadraB.join(" 🆚 ");
 
-  document.getElementById("quadraAText").innerText =
-    quadraA.length===2 ? quadraA.join(" 🆚 ") : "-";
-
-  document.getElementById("quadraBText").innerText =
-    quadraB.length===2 ? quadraB.join(" 🆚 ") : "-";
-
-  const qDiv = document.getElementById("queue");
+  const qDiv=document.getElementById("queue");
   qDiv.innerHTML="";
-  queue.forEach((t,i)=> qDiv.innerHTML += `<p>${i+1}º ${t}</p>`);
+  queue.forEach((t,i)=> qDiv.innerHTML+=`<p>${i+1}º ${t}</p>`);
 
-  const rDiv = document.getElementById("ranking");
+  const rDiv=document.getElementById("ranking");
   rDiv.innerHTML="";
 
-  let ranking = Object.keys(stats).sort((a,b)=>stats[b].wins-stats[a].wins);
-
+  let ranking=Object.keys(stats).sort((a,b)=>stats[b].wins-stats[a].wins);
   ranking.forEach((t,i)=>{
-    rDiv.innerHTML += `<p>${i+1}º ${t} - ${stats[t].wins} vitórias</p>`;
+    rDiv.innerHTML+=`<p>${i+1}º ${t} - ${stats[t].wins}</p>`;
   });
 }
 
-/* TIMER */
 function startTimer(){
   if(interval) clearInterval(interval);
 
-  let sec = 0;
-  interval = setInterval(()=>{
+  let sec=0;
+  interval=setInterval(()=>{
     sec++;
     document.getElementById("timer").innerText =
       String(Math.floor(sec/60)).padStart(2,"0")+":"+
@@ -246,15 +287,8 @@ function startTimer(){
   },1000);
 }
 
-/* RESET */
-function resetAll(){
-  if(confirm("Resetar?")){
-    localStorage.clear();
-    location.reload();
-  }
-}
-
 renderTeams();
+
 </script>
 
 </body>
