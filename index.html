@@ -22,16 +22,9 @@ body{
 }
 
 .logo img{
-  width:150px;
+  width:140px;
   border-radius:20px;
   box-shadow:0 0 30px gold;
-  animation:float 4s infinite;
-}
-
-@keyframes float{
-  0%{transform:translateY(0)}
-  50%{transform:translateY(-10px)}
-  100%{transform:translateY(0)}
 }
 
 button{
@@ -65,9 +58,11 @@ button{
 <h2>M&M Organização</h2>
 </div>
 
+<!-- CADASTRO -->
 <div id="cadastroPage">
 <input id="teamInput" placeholder="Nome do time">
 <button onclick="addTeam()" class="blue">Adicionar</button>
+
 <ul id="teamList"></ul>
 
 <select id="numCourts">
@@ -75,9 +70,11 @@ button{
 <option value="2">2 Quadras</option>
 </select>
 
+<br>
 <button onclick="startGames()" class="blue">Iniciar</button>
 </div>
 
+<!-- JOGOS -->
 <div id="gamePage" class="hidden">
 
 <div class="card">
@@ -102,6 +99,8 @@ button{
 <h2>Ranking</h2>
 <div id="ranking"></div>
 
+<button onclick="resetAll()" class="gray">Resetar</button>
+
 </div>
 
 </div>
@@ -114,10 +113,10 @@ let queue = [];
 let quadraA = [];
 let quadraB = [];
 
-let streakA = 0, streakB = 0;
-let lastA = null, lastB = null;
+let streakA=0, streakB=0;
+let lastA=null, lastB=null;
 
-let interval = null;
+let interval=null;
 
 /* SALVAR */
 function save(){
@@ -127,25 +126,28 @@ function save(){
 
 /* CADASTRO */
 function addTeam(){
-  let name = teamInput.value.trim();
+  const input = document.getElementById("teamInput");
+  const name = input.value.trim();
   if(!name) return;
 
   teams.push(name);
   stats[name] = {wins:0, losses:0};
 
-  teamInput.value="";
+  input.value="";
   save();
   renderTeams();
 }
 
 function renderTeams(){
-  teamList.innerHTML="";
-  teams.forEach(t => teamList.innerHTML += `<li>${t}</li>`);
+  const list = document.getElementById("teamList");
+  list.innerHTML="";
+  teams.forEach(t=> list.innerHTML += `<li>${t}</li>`);
 }
 
 /* INICIAR */
 function startGames(){
-  let numCourts = parseInt(numCourts.value);
+
+  const numCourts = parseInt(document.getElementById("numCourts").value);
 
   if(teams.length < 2){
     alert("Cadastre pelo menos 2 times");
@@ -154,11 +156,13 @@ function startGames(){
 
   queue = [...teams];
 
-  cadastroPage.classList.add("hidden");
-  gamePage.classList.remove("hidden");
+  document.getElementById("cadastroPage").classList.add("hidden");
+  document.getElementById("gamePage").classList.remove("hidden");
 
   if(numCourts === 1){
-    quadraBBox.style.display = "none";
+    document.getElementById("quadraBBox").style.display = "none";
+  } else {
+    document.getElementById("quadraBBox").style.display = "block";
   }
 
   gerar(numCourts);
@@ -172,11 +176,11 @@ function gerar(numCourts){
   render();
 }
 
-/* RESULTADO COM REGRA GANHA 2 SAI */
-function win(q, n){
+/* WIN */
+function win(q,n){
 
-  let match = q === "A" ? quadraA : quadraB;
-  if(match.length < 2) return;
+  let match = q==="A"?quadraA:quadraB;
+  if(match.length<2) return;
 
   let winner = match[n-1];
   let loser = match[n===1?1:0];
@@ -185,54 +189,47 @@ function win(q, n){
   stats[loser].losses++;
   save();
 
-  let streak = q === "A" ? streakA : streakB;
-  let last = q === "A" ? lastA : lastB;
+  let streak = q==="A"?streakA:streakB;
+  let last = q==="A"?lastA:lastB;
 
-  if(last === winner){
-    streak++;
-  } else {
-    streak = 1;
-    last = winner;
-  }
+  if(last===winner){streak++} else{streak=1; last=winner;}
 
-  if(streak >= 2){
-    // 🔥 SAI DA QUADRA
-    queue.push(winner, loser);
-    match = queue.length >= 2 ? [queue.shift(), queue.shift()] : [];
-    streak = 0;
-    last = null;
-  } else {
-    // normal: vencedor continua
+  if(streak>=2){
+    queue.push(winner,loser);
+    match = queue.length>=2 ? [queue.shift(), queue.shift()] : [];
+    streak=0; last=null;
+  }else{
     queue.push(loser);
-    match = [winner];
+    match=[winner];
     if(queue.length) match.push(queue.shift());
   }
 
-  if(q === "A"){
-    quadraA = match;
-    streakA = streak;
-    lastA = last;
-  } else {
-    quadraB = match;
-    streakB = streak;
-    lastB = last;
-  }
+  if(q==="A"){quadraA=match; streakA=streak; lastA=last;}
+  else{quadraB=match; streakB=streak; lastB=last;}
 
   render();
 }
 
 /* RENDER */
 function render(){
-  quadraAText.innerText = quadraA.length===2 ? quadraA.join(" 🆚 ") : "-";
-  quadraBText.innerText = quadraB.length===2 ? quadraB.join(" 🆚 ") : "-";
 
-  queue.innerHTML="";
-  queue.forEach((t,i)=> queue.innerHTML += `<p>${i+1}º ${t}</p>`);
+  document.getElementById("quadraAText").innerText =
+    quadraA.length===2 ? quadraA.join(" 🆚 ") : "-";
 
-  let ranking = Object.keys(stats).sort((a,b)=>stats[b].wins - stats[a].wins);
-  ranking.innerHTML="";
+  document.getElementById("quadraBText").innerText =
+    quadraB.length===2 ? quadraB.join(" 🆚 ") : "-";
+
+  const qDiv = document.getElementById("queue");
+  qDiv.innerHTML="";
+  queue.forEach((t,i)=> qDiv.innerHTML += `<p>${i+1}º ${t}</p>`);
+
+  const rDiv = document.getElementById("ranking");
+  rDiv.innerHTML="";
+
+  let ranking = Object.keys(stats).sort((a,b)=>stats[b].wins-stats[a].wins);
+
   ranking.forEach((t,i)=>{
-    ranking.innerHTML += `<p>${i+1}º ${t} - ${stats[t].wins} vitórias</p>`;
+    rDiv.innerHTML += `<p>${i+1}º ${t} - ${stats[t].wins} vitórias</p>`;
   });
 }
 
@@ -243,10 +240,18 @@ function startTimer(){
   let sec = 0;
   interval = setInterval(()=>{
     sec++;
-    timer.innerText =
+    document.getElementById("timer").innerText =
       String(Math.floor(sec/60)).padStart(2,"0")+":"+
       String(sec%60).padStart(2,"0");
   },1000);
+}
+
+/* RESET */
+function resetAll(){
+  if(confirm("Resetar?")){
+    localStorage.clear();
+    location.reload();
+  }
 }
 
 renderTeams();
