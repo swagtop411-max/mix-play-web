@@ -27,7 +27,6 @@ body{
   margin-bottom:10px;
 }
 
-/* UI */
 button{
   padding:10px 18px;
   margin:5px;
@@ -87,7 +86,7 @@ input, select{
 <!-- JOGOS -->
 <div id="gamePage" class="hidden">
 
-<div id="quadraABox" class="card">
+<div class="card">
 <h2>Quadra A</h2>
 <h3 id="quadraAText"></h3>
 <button onclick="win('A',1)" class="blue">Time 1 venceu</button>
@@ -109,15 +108,16 @@ input, select{
 <h2>Ranking</h2>
 <div id="ranking"></div>
 
-<button onclick="location.reload()" class="gray">Reiniciar</button>
+<button onclick="resetAll()" class="gray">Resetar Dados</button>
 
 </div>
 
 </div>
 
 <script>
-let teams = [];
-let stats = {};
+/* ================= DADOS ================= */
+let teams = JSON.parse(localStorage.getItem("teams")) || [];
+let stats = JSON.parse(localStorage.getItem("stats")) || {};
 
 let queue = [];
 let quadraA = [];
@@ -128,15 +128,22 @@ let lastA=null, lastB=null;
 
 let numCourts = 1;
 
-/* CADASTRO */
+/* ================= SALVAR ================= */
+function saveData(){
+  localStorage.setItem("teams", JSON.stringify(teams));
+  localStorage.setItem("stats", JSON.stringify(stats));
+}
+
+/* ================= CADASTRO ================= */
 function addTeam(){
   const name = document.getElementById("teamInput").value.trim();
   if(!name) return;
 
   teams.push(name);
-  stats[name]={wins:0,losses:0};
+  stats[name] = {wins:0, losses:0};
 
   document.getElementById("teamInput").value="";
+  saveData();
   renderTeams();
 }
 
@@ -148,7 +155,7 @@ function renderTeams(){
   });
 }
 
-/* INICIAR */
+/* ================= INICIAR ================= */
 function startGames(){
   numCourts = parseInt(document.getElementById("numCourts").value);
 
@@ -170,23 +177,15 @@ function startGames(){
   startTimer();
 }
 
-/* GERAR JOGOS */
+/* ================= GERAR ================= */
 function gerarJogos(){
-
-  quadraA = queue.length >=2 ? [queue.shift(), queue.shift()] : [];
-
-  if(numCourts === 2 && queue.length >=2){
-    quadraB = [queue.shift(), queue.shift()];
-  } else {
-    quadraB = [];
-  }
-
+  quadraA = queue.length>=2 ? [queue.shift(), queue.shift()] : [];
+  quadraB = (numCourts===2 && queue.length>=2) ? [queue.shift(), queue.shift()] : [];
   renderAll();
 }
 
-/* RESULTADO */
+/* ================= RESULTADO ================= */
 function win(quadra, num){
-
   let match = quadra==="A"?quadraA:quadraB;
   if(match.length < 2) return;
 
@@ -195,6 +194,7 @@ function win(quadra, num){
 
   stats[winner].wins++;
   stats[loser].losses++;
+  saveData();
 
   let streak = quadra==="A"?streakA:streakB;
   let last = quadra==="A"?lastA:lastB;
@@ -218,19 +218,15 @@ function win(quadra, num){
   }
 
   if(quadra==="A"){
-    quadraA = match;
-    streakA = streak;
-    lastA = last;
+    quadraA = match; streakA = streak; lastA = last;
   } else {
-    quadraB = match;
-    streakB = streak;
-    lastB = last;
+    quadraB = match; streakB = streak; lastB = last;
   }
 
   renderAll();
 }
 
-/* RENDER */
+/* ================= RENDER ================= */
 function renderAll(){
   renderQuadras();
   renderQueue();
@@ -242,18 +238,12 @@ function renderQuadras(){
     quadraA.length===2 ? quadraA.join(" 🆚 ") : "Aguardando...";
 
   document.getElementById("quadraBText").innerText =
-    quadraB.length===2 ? quadraB.join(" 🆚 ") : "—";
+    quadraB.length===2 ? quadraB.join(" 🆚 ") : "-";
 }
 
 function renderQueue(){
   const div = document.getElementById("queue");
-  div.innerHTML = "";
-
-  if(queue.length === 0){
-    div.innerHTML = "<p>Sem fila</p>";
-    return;
-  }
-
+  div.innerHTML="";
   queue.forEach((t,i)=>{
     div.innerHTML += `<p>${i+1}º - ${t}</p>`;
   });
@@ -272,7 +262,7 @@ function renderRanking(){
   });
 }
 
-/* TIMER */
+/* ================= TIMER ================= */
 let sec=0;
 function startTimer(){
   setInterval(()=>{
@@ -282,6 +272,18 @@ function startTimer(){
     document.getElementById("timer").innerText = m+":"+s;
   },1000);
 }
+
+/* ================= RESET ================= */
+function resetAll(){
+  if(confirm("Apagar todos os dados?")){
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+/* ================= INIT ================= */
+renderTeams();
+renderRanking();
 </script>
 
 </body>
