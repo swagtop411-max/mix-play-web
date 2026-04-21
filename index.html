@@ -21,52 +21,29 @@ body{
   padding:20px;
 }
 
-/* LOGO */
 .logo{
   display:flex;
   flex-direction:column;
   align-items:center;
   gap:8px;
-  margin-bottom:15px;
 }
 
 .logo img{
   width:120px;
   border-radius:20px;
   box-shadow:0 0 25px rgba(255,215,0,0.5);
-  animation:float 3s ease-in-out infinite;
 }
 
-.logo h2{
-  margin:0;
-  font-size:18px;
-  color:#facc15;
-  font-weight:bold;
-}
-
-@keyframes float{
-  0%{ transform:translateY(0); }
-  50%{ transform:translateY(-6px); }
-  100%{ transform:translateY(0); }
-}
-
-button{
-  padding:12px 22px;
-  margin:6px;
-  border:none;
-  border-radius:12px;
-  font-size:16px;
-  cursor:pointer;
-  font-weight:bold;
-}
-
-.blue{ background:#22c55e; color:white; }
+.blue{ background:#22c55e; }
 .gray{ background:#ccc; color:black; }
 
-input{
-  padding:10px;
-  border-radius:8px;
+button{
+  padding:12px;
+  margin:5px;
   border:none;
+  border-radius:10px;
+  font-weight:bold;
+  cursor:pointer;
 }
 
 .hidden{ display:none; }
@@ -88,6 +65,7 @@ input{
 <h2>M&M Organização</h2>
 </div>
 
+<!-- CADASTRO -->
 <div id="cadastroPage">
 <h1>🏐 Arena M&M</h1>
 
@@ -96,36 +74,43 @@ input{
 
 <ul id="teamList"></ul>
 
-<button onclick="startGames()" class="blue">Iniciar Jogos</button>
+<h3>Quantidade de quadras:</h3>
+<select id="numCourts">
+  <option value="1">1 Quadra</option>
+  <option value="2">2 Quadras</option>
+</select>
+
+<br><br>
+<button onclick="startGames()" class="blue">Iniciar</button>
 </div>
 
+<!-- JOGOS -->
 <div id="gamePage" class="hidden">
 
-<h1>🏐 Quadras</h1>
-
-<div class="card">
 <h2>Quadra A</h2>
+<div class="card">
 <h3 id="quadraA"></h3>
 <button onclick="win('A',1)" class="blue">Time 1 venceu</button>
 <button onclick="win('A',2)" class="blue">Time 2 venceu</button>
 </div>
 
-<div class="card">
+<div id="quadraBContainer">
 <h2>Quadra B</h2>
+<div class="card">
 <h3 id="quadraB"></h3>
 <button onclick="win('B',1)" class="blue">Time 1 venceu</button>
 <button onclick="win('B',2)" class="blue">Time 2 venceu</button>
 </div>
+</div>
 
 <h2 id="timer">00:00</h2>
 
-<h2>📋 Fila</h2>
+<h2>Fila</h2>
 <div id="queue"></div>
 
-<h2>🏆 Ranking</h2>
+<h2>Ranking</h2>
 <div id="ranking"></div>
 
-<button onclick="resetAll()" class="gray">Resetar</button>
 <button onclick="goBack()" class="gray">Voltar</button>
 
 </div>
@@ -133,200 +118,123 @@ input{
 </div>
 
 <script>
-let teams = JSON.parse(localStorage.getItem("teams")) || [];
-let stats = JSON.parse(localStorage.getItem("stats")) || {};
-
+let teams = [];
+let stats = {};
 let queue = [];
 let quadraA = [];
 let quadraB = [];
 
-// CONTROLE DE VITÓRIAS
-let streakA = 0;
-let streakB = 0;
-let lastWinnerA = null;
-let lastWinnerB = null;
+let streakA=0, streakB=0;
+let lastA=null, lastB=null;
 
-let timerInterval;
-let seconds = 0;
+let numCourts = 1;
 
-function saveData(){
-  localStorage.setItem("teams", JSON.stringify(teams));
-  localStorage.setItem("stats", JSON.stringify(stats));
-}
-
+/* CADASTRO */
 function addTeam(){
-  const name = document.getElementById("teamInput").value.trim();
+  let name = teamInput.value.trim();
   if(!name) return;
-
   teams.push(name);
-  stats[name] = {wins:0, losses:0};
-
-  document.getElementById("teamInput").value="";
-  saveData();
+  stats[name]={wins:0,losses:0};
+  teamInput.value="";
   renderTeams();
 }
 
 function renderTeams(){
-  const list = document.getElementById("teamList");
-  list.innerHTML="";
-  teams.forEach((team,i)=>{
-    list.innerHTML += `<li>${team} 
-    <button onclick="removeTeam(${i})" class="gray">X</button></li>`;
+  teamList.innerHTML="";
+  teams.forEach((t,i)=>{
+    teamList.innerHTML+=`<li>${t}</li>`;
   });
 }
 
-function removeTeam(i){
-  delete stats[teams[i]];
-  teams.splice(i,1);
-  saveData();
-  renderTeams();
-}
-
+/* INICIAR */
 function startGames(){
-  if(teams.length < 2){
-    alert("Precisa de pelo menos 2 times");
-    return;
+  numCourts = parseInt(numCourtsSelect());
+  if(teams.length<2) return alert("Poucos times");
+
+  queue=[...teams];
+
+  cadastroPage.classList.add("hidden");
+  gamePage.classList.remove("hidden");
+
+  if(numCourts===1){
+    quadraBContainer.style.display="none";
   }
 
-  queue = [...teams];
-
-  document.getElementById("cadastroPage").classList.add("hidden");
-  document.getElementById("gamePage").classList.remove("hidden");
-
-  gerarQuadras();
+  gerar();
   startTimer();
 }
 
-function gerarQuadras(){
-  quadraA = [queue.shift(), queue.shift()];
-  quadraB = queue.length >= 2 ? [queue.shift(), queue.shift()] : [];
-
-  renderAll();
+function numCourtsSelect(){
+  return document.getElementById("numCourts").value;
 }
 
-function win(quadra, teamNumber){
+/* GERAR */
+function gerar(){
+  quadraA=[queue.shift(),queue.shift()];
+  if(numCourts===2 && queue.length>=2){
+    quadraB=[queue.shift(),queue.shift()];
+  }
+  render();
+}
 
-  let match = quadra === "A" ? quadraA : quadraB;
-  if(match.length < 2) return;
+/* WIN */
+function win(q,n){
+  let match = q==="A"?quadraA:quadraB;
+  if(match.length<2) return;
 
-  const winner = match[teamNumber-1];
-  const loser = match[teamNumber===1?1:0];
+  let winner = match[n-1];
+  let loser = match[n===1?1:0];
 
   stats[winner].wins++;
   stats[loser].losses++;
 
-  saveData();
+  let streak = q==="A"?streakA:streakB;
+  let last = q==="A"?lastA:lastB;
 
-  let streak = quadra === "A" ? streakA : streakB;
-  let lastWinner = quadra === "A" ? lastWinnerA : lastWinnerB;
+  if(last===winner){streak++} else{streak=1; last=winner;}
 
-  if(lastWinner === winner){
-    streak++;
-  } else {
-    streak = 1;
-    lastWinner = winner;
-  }
-
-  // SE GANHOU 2 → SAI
-  if(streak >= 2){
-    queue.push(winner);
+  if(streak>=2){
+    queue.push(winner,loser);
+    match=[queue.shift(),queue.shift()];
+    streak=0; last=null;
+  }else{
     queue.push(loser);
-
-    match = [queue.shift(), queue.shift()];
-
-    streak = 0;
-    lastWinner = null;
-  } else {
-    // normal: vencedor fica
-    queue.push(loser);
-
-    match = [winner];
-    if(queue.length){
-      match.push(queue.shift());
-    }
+    match=[winner, queue.shift()];
   }
 
-  if(quadra === "A"){
-    quadraA = match;
-    streakA = streak;
-    lastWinnerA = lastWinner;
-  } else {
-    quadraB = match;
-    streakB = streak;
-    lastWinnerB = lastWinner;
-  }
+  if(q==="A"){quadraA=match; streakA=streak; lastA=last;}
+  else{quadraB=match; streakB=streak; lastB=last;}
 
-  renderAll();
+  render();
 }
 
-function renderAll(){
-  renderQuadras();
-  renderQueue();
-  renderRanking();
-}
+/* RENDER */
+function render(){
+  quadraA.innerText=quadraA.join(" VS ");
+  quadraB.innerText=quadraB.join(" VS ");
+  
+  queueDiv.innerHTML="";
+  queue.forEach((t,i)=> queueDiv.innerHTML+=`<p>${i+1} - ${t}</p>`);
 
-function renderQuadras(){
-  document.getElementById("quadraA").innerText =
-    quadraA.length === 2 ? quadraA[0] + " 🆚 " + quadraA[1] : "Aguardando...";
-
-  document.getElementById("quadraB").innerText =
-    quadraB.length === 2 ? quadraB[0] + " 🆚 " + quadraB[1] : "Sem times suficientes";
-}
-
-function renderQueue(){
-  const div = document.getElementById("queue");
-  div.innerHTML="";
-  queue.forEach((t,i)=>{
-    div.innerHTML += `<p>${i+1}º - ${t}</p>`;
+  let ranking=Object.keys(stats).sort((a,b)=>stats[b].wins-stats[a].wins);
+  rankingDiv.innerHTML="";
+  ranking.forEach(t=>{
+    rankingDiv.innerHTML+=`<p>${t} | ${stats[t].wins}V</p>`;
   });
 }
 
-function renderRanking(){
-  const div = document.getElementById("ranking");
-  div.innerHTML="";
-
-  const ranking = Object.keys(stats).map(team=>{
-    return {
-      name:team,
-      wins:stats[team].wins,
-      losses:stats[team].losses,
-      saldo:stats[team].wins - stats[team].losses
-    }
-  }).sort((a,b)=>b.saldo-a.saldo);
-
-  ranking.forEach((t,i)=>{
-    div.innerHTML += `<p ${i===0?"style='color:gold;font-weight:bold'":""}>
-    ${i+1}º ${t.name} | 🏆 ${t.wins} | ❌ ${t.losses}
-    </p>`;
-  });
-}
-
+/* TIMER */
+let s=0;
 function startTimer(){
-  clearInterval(timerInterval);
-  seconds = 0;
-
-  timerInterval = setInterval(()=>{
-    seconds++;
-    let m = String(Math.floor(seconds/60)).padStart(2,"0");
-    let s = String(seconds%60).padStart(2,"0");
-    document.getElementById("timer").innerText = m+":"+s;
+  setInterval(()=>{
+    s++;
+    timer.innerText=Math.floor(s/60)+":"+("0"+s%60).slice(-2);
   },1000);
 }
 
-function resetAll(){
-  if(confirm("Resetar tudo?")){
-    localStorage.clear();
-    location.reload();
-  }
-}
-
 function goBack(){
-  document.getElementById("gamePage").classList.add("hidden");
-  document.getElementById("cadastroPage").classList.remove("hidden");
+  location.reload();
 }
-
-renderTeams();
-renderRanking();
 </script>
 
 </body>
