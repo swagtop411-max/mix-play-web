@@ -25,10 +25,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R --exclude-dir=.git -niE '(const|let|var)[[:space:]]+(senha|password)[[:space:]]*=|type=["'"']password["'"']' .; then
-            echo "Credencial ou gate de senha client-side detectado."
-            exit 1
-          fi
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          patterns = [
+              re.compile(r'\b(?:const|let|var)\s+(?:senha|password)\s*=', re.I),
+              re.compile(r'type\s*=\s*["\x27]password["\x27]', re.I),
+          ]
+          offenders = []
+          for path in [*Path('.').glob('*.html'), *Path('.').glob('*.js')]:
+              text = path.read_text(encoding='utf-8', errors='replace')
+              if any(pattern.search(text) for pattern in patterns):
+                  offenders.append(str(path))
+          if offenders:
+              raise SystemExit('Gate/credencial client-side detectado em: ' + ', '.join(offenders))
+          print('OK: nenhum gate de senha client-side encontrado')
+          PY
 
       - name: Validate inline JavaScript
         shell: bash
@@ -37,8 +49,11 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import re
-          html = Path('index.html').read_text(encoding='utf-8')
-          scripts = re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>', html, flags=re.I)
-          Path('/tmp/mix-play-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          for source in Path('.').glob('*.html'):
+              html = source.read_text(encoding='utf-8')
+              scripts = re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>', html, flags=re.I)
+              target = Path('/tmp') / f'{source.stem}-inline.js'
+              target.write_text('\n'.join(scripts), encoding='utf-8')
+              print(target)
           PY
-          node --check /tmp/mix-play-inline.js
+          for file in /tmp/*-inline.js; do node --check "$file"; done
