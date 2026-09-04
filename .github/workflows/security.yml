@@ -1,0 +1,59 @@
+name: Validate legacy tool
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Guard against client-side password gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          patterns = [
+              re.compile(r'\b(?:const|let|var)\s+(?:senha|password)\s*=', re.I),
+              re.compile(r'type\s*=\s*["\x27]password["\x27]', re.I),
+          ]
+          offenders = []
+          for path in [*Path('.').glob('*.html'), *Path('.').glob('*.js')]:
+              text = path.read_text(encoding='utf-8', errors='replace')
+              if any(pattern.search(text) for pattern in patterns):
+                  offenders.append(str(path))
+          if offenders:
+              raise SystemExit('Gate/credencial client-side detectado em: ' + ', '.join(offenders))
+          print('OK: nenhum gate de senha client-side encontrado')
+          PY
+
+      - name: Validate inline JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          for source in Path('.').glob('*.html'):
+              html = source.read_text(encoding='utf-8')
+              scripts = re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>', html, flags=re.I)
+              target = Path('/tmp') / f'{source.stem}-inline.js'
+              target.write_text('\n'.join(scripts), encoding='utf-8')
+              print(target)
+          PY
+          for file in /tmp/*-inline.js; do node --check "$file"; done
