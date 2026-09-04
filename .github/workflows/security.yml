@@ -1,0 +1,44 @@
+name: Validate legacy tool
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Guard against client-side password gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R --exclude-dir=.git -niE '(const|let|var)[[:space:]]+(senha|password)[[:space:]]*=|type=["'"']password["'"']' .; then
+            echo "Credencial ou gate de senha client-side detectado."
+            exit 1
+          fi
+
+      - name: Validate inline JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>', html, flags=re.I)
+          Path('/tmp/mix-play-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          PY
+          node --check /tmp/mix-play-inline.js
